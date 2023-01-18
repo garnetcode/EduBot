@@ -380,7 +380,7 @@ class ActionValidator(object):
                             "data": user.first(),
                             "message": {
                                 "response_type": "interactive",
-                                "text": "Purchase cancelled.",
+                                "text": "PayPal is not yet supported. Please select another payment method.",
                                 "username": f"{user.first().first_name} {user.first().last_name}",
                                 "menu_name": "🏠 Main Menu",
                                 "menu_items" :[
@@ -438,7 +438,7 @@ class ActionValidator(object):
                                 "id": course.code,
                                 "name": course.name,
                                 "description": f"Course Code: {course.code}\nCourse Duration: {course.duration} week(s)",
-                            } for course in Course.objects.all()
+                            } for course in Course.objects.all().exclude(code="COUT")
                         ]
                     }
                 }
