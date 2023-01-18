@@ -304,7 +304,7 @@ class ActionValidator(object):
                             "data": user.first(),
                             "message": {
                                 "response_type": "text",
-                                "text": "*PayNow*\n\nPlease enter the phone number you want to pay with\n\n*NB:* _The number should be registered with Ecocash or OneMoney._",
+                                "text": "*PayNow*\n\nPlease enter the phone number you want to pay with\n\ne.g. 0771111111\n\n*NB:* _The number should be registered with Ecocash or OneMoney._",
                             }
                         }
                     elif session["data"].get("payment_method") == "paynow" and  session["data"].get("paying_phone_number") is None:
@@ -367,66 +367,6 @@ class ActionValidator(object):
                                     "text": f"*PayNow*\n\n{payment_method(message).title()} is not supported. Please enter a valid Ecocash or OneMoney phone number.",
                                 }
                             }
-                            
-
-                        # pylint: disable=no-member
-                        # course = Course.objects.get(code=session["data"]["selected_course"])
-                        # student = User.objects.get(phone_number=phone_number)
-                        # package = Package.objects.get(name=session["data"]["selected_package"])
-
-                        # if student.enrolled_courses.filter(id=course.id).exists():
-                        #     session["state"] = "menu"
-                        #     session["data"] = {
-                        #         "selected_course": None,
-                        #         "selected_package": None,
-                        #     }
-                        #     cache.set(phone_number, session, 60*60*24)
-                        #     return{
-                        #         "is_valid": True,
-                        #         "data": user.first(),
-                        #         "message": {
-                        #             "response_type": "interactive",
-                        #             "text": "You are already enrolled in this course.\n\n What would you like to do?",
-                        #             "username": f"{user.first().first_name} {user.first().last_name}",
-                        #             "menu_name": "🏠 Main Menu",
-                        #             "menu_items" :[
-                        #                 {"id": "enroll", "name": "Enroll", "description": "Enroll in a course"},
-                        #                 {"id": "courses", "name": "Courses", "description": "View your courses"},
-                        #                 {"id": "assignment", "name": "Assignments", "description": "Go to assignments"},
-                        #                 {"id": "payments", "name": "Payments", "description": "View your payments"},
-                        #                 {"id": "profile", "name": "Profile", "description": "View your profile"},
-                        #                 {"id": "help", "name": "Get Started", "description": "User guide"},
-                        #                 {"id": "about", "name": "About Us", "description": "Contact Us"},
-                        #             ]
-                        #         }
-                        #     }
-
-                       
-
-
-                        # Payment.objects.create(
-                        #     user=student,
-                        #     course=course,
-                        #     amount=package.price,
-                        #     package=package,
-                        #     payment_status="Paid",
-                        #     payment_type="PayPal"
-                        # )
-                        ############################################
-
-                        # session["state"] = "menu"
-                        # session["data"] = {
-                        #     "selected_course": None,
-                        #     "selected_package": None,
-                        # }
-                        return{
-                            "is_valid": True,
-                            "data": user.first(),
-                            "message": {
-                                "response_type": "text",
-                                "text": "Please follow the link to complete your purchase.\n\nhttps://www.spotify.com/us/purchase/offer/premium-family/?country=US"
-                            }
-                        }
 
                     elif message == "paypal":
                         session["state"] = "menu"
