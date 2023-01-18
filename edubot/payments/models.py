@@ -16,7 +16,8 @@ class Payment(models.Model):
     course = models.ForeignKey(
         "courses.Course",
         on_delete=models.CASCADE,
-        related_name="payments"
+        related_name="payments",
+        null=True
     )
     user = models.ForeignKey(
         "users.User",

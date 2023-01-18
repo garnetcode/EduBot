@@ -1,18 +1,18 @@
-version: '3.8' 
+version: '3.3'
 
 services:
 
   redis:
-      container_name: 'redis'
-      image: 'redis:latest'
-      ports:
-        - '6379:6379'
-      networks:
-        - edubot
-      volumes:
-        - 'redisdata:/data'
-      restart : unless-stopped
-    
+    container_name: 'redis'
+    image: 'redis:latest'
+    ports:
+      - '6380:6380'
+    networks:
+      - edubot
+    volumes:
+      - 'redisdata:/data'
+    restart: unless-stopped
+
   db:
     image: postgres:13.0-alpine
     volumes:
@@ -22,22 +22,22 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=edubot
     ports:
-      - 5432:5432
+      - 5433:5433
     networks:
       - edubot
 
   edubot_api:
     image: edubot_api
-    build: 
+    build:
       context: ./edubot
       dockerfile: Dockerfile
     networks:
       - edubot
 
     restart: always
-    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8005
     ports:
-      - 8000:8000
+      - 8005:8005
     depends_on:
       - redis
       - db
@@ -47,7 +47,8 @@ volumes:
   postgres_data:
   .:
 
-networks:
-  edubot: 
 
-  
+networks:
+  edubot:
+
+

@@ -264,7 +264,7 @@ class ActionValidator(object):
         user = User.objects.filter(phone_number=phone_number)
 
         # pylint: disable=no-member
-        courses = Course.objects.all()
+        courses = Course.objects.all().exclude(code="COUT")
         if cache.get(phone_number):
             session = cache.get(phone_number)
 
@@ -541,7 +541,7 @@ class ActionValidator(object):
         """My courses menu"""
         user = User.objects.filter(phone_number=phone_number)
         # pylint: disable=no-member
-        courses = Course.objects.filter(students__in=user)
+        courses = Course.objects.filter(students__in=user).exclude(code="COUT")
         base = []
         if session.get("data"):
             if session["data"].get("total_pages"):
@@ -944,7 +944,7 @@ class ActionValidator(object):
                         "data": user,
                         "message": {
                             "exclude_back": True,
-                            "response_type": "button",
+                            "response_type": "pay_download",
                             "text": "Your assignment has been submitted successfully.",
                         }
                     }
@@ -958,7 +958,8 @@ class ActionValidator(object):
                         }
                     }
             #pylint: disable=broad-except
-            except Exception:
+            except Exception as e:
+                print("Error: ", e)
                 return {
                     "is_valid": False,
                     "data": user,
@@ -1023,58 +1024,67 @@ class ActionValidator(object):
                 }
             }     
         elif session["data"].get("action") == "receive_assignment":
-            # try:
-            url_regex = re.compile(
-                r'^(?:http|ftp)s?://' # http:// or https://
-                r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
-                r'localhost|' #localhost...
-                r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-                r'(?::\d+)?' # optional port
-                r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-            if url_regex.match(message):
-                file = requests.get(url=message, headers={
-                                'Authorization': f"Bearer {config('CLOUD_API_TOKEN')}"})
-                bytesio_o = BytesIO(file.content)
+            try:
+                url_regex = re.compile(
+                    r'^(?:http|ftp)s?://' # http:// or https://
+                    r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
+                    r'localhost|' #localhost...
+                    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+                    r'(?::\d+)?' # optional port
+                    r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+                if url_regex.match(message):
+                    file = requests.get(url=message, headers={
+                                    'Authorization': f"Bearer {config('CLOUD_API_TOKEN')}"})
+                    bytesio_o = BytesIO(file.content)
 
-                obj = InMemoryUploadedFile(
-                    file=bytesio_o,
-                    field_name='file',
-                    name=payload.get("filename"),
-                    content_type=file.headers.get("content-type"),
-                    size=sys.getsizeof(bytesio_o),
-                    charset="Unicode - UTF8"
-                )
-                assignment = Assignment.objects.create(
+                    obj = InMemoryUploadedFile(
+                        file=bytesio_o,
+                        field_name='file',
+                        name=payload.get("filename"),
+                        content_type=file.headers.get("content-type"),
+                        size=sys.getsizeof(bytesio_o),
+                        charset="Unicode - UTF8"
+                    )
+                    assignment = Assignment.objects.create(
+                        assignment_type="Outsourced",
+                        status="Pending",
+                        submitted_by=user,
+                        file=obj
 
-                    assignment_type="Outsourced",
-                    status="Pending",
-                    submitted_by=user,
-                    file=obj
+                    )
+                    payment = Payment.objects.create(
+                        user=user,
+                        amount=0,
+                        course=Course.objects.get(code="COUT"),
+                        payment_type="Outsource",
+                        payment_status="Awaiting Payment"
+                    )
+                    assignment.payment = payment
+                    assignment.save()
 
-                )
-                payment = Payment.objects.create(
-                    user=user,
-                    amount=0,
-                    assignment=assignment,
-                    payment_type="Outsource",
-                    status="Awaiting Payment"
-                )
-                assignment.payment = payment
-                assignment.save()
-
-                session["data"]["action"] = "pending_payment"
-                cache.set(f"{phone_number}_session", session)
-                return {
-                    "is_valid": True,
-                    "data": user,
-                    "message": {
-                        "exclude_download": True,
-                        "response_type": "pay_download",
-                        "id": payment.id,
-                        "text": f"We have received your assignment referenced as Assignment {assignment.id}.\nPlease note that you will be charged a fee for this service. Complete the payment process so we can start working on it.\n\nThank you for using our service.",
+                    session["data"]["action"] = "pending_payment"
+                    cache.set(f"{phone_number}_session", session)
+                    return {
+                        "is_valid": True,
+                        "data": user,
+                        "message": {
+                            "exclude_download": True,
+                            "response_type": "pay_download",
+                            "id": payment.id,
+                            "text": f"We have received your assignment referenced as Assignment {assignment.id}.\nPlease note that you will be charged a fee for this service. Complete the payment process so we can start working on it.\n\nThank you for using our service.",
+                        }
                     }
-                }
-            else:
+                else:
+                    return {
+                        "is_valid": False,
+                        "data": user,
+                        "message": {
+                            "response_type": "text",
+                            "text": "Please upload and send your assignment as a document."
+                        }
+                    }
+            except Exception as e:
+                print(e)
                 return {
                     "is_valid": False,
                     "data": user,

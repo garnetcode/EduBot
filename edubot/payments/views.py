@@ -37,7 +37,7 @@ class PaymentsWebHook(APIView):
             payment.course.save()
 
             receipt_like_template = f"""
-                *EduBot ✅*\n\nThank you for subscribing to *{payment.course.name}*.\n\nYour payment of *$ {payment.package.price}* with payment \n_ID-{payment.id[:7]}_ has been received.\n\nIf you have any questions regarding your payment, please contact us at admin@edubot.com or call 263782624032
+                *EduBot ✅*\n\nThank you for subscribing to *{payment.course.name}*.\n\nYour payment of *$ {payment.package.price}* has been received.\n\nIf you have any questions regarding your payment, please contact us at admin@edubot.com or call 263782624032
             """
             receipt ={
                 "messaging_product": "whatsapp",
