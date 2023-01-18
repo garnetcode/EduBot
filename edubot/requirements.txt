@@ -1,0 +1,14 @@
+Django
+django-cors-headers
+django-redis
+djangorestframework
+djangorestframework-simplejwt
+docker
+docker-compose
+docker-pycreds
+dockerpty
+gunicorn
+psycopg2-binary
+python-decouple
+redis
+requests
