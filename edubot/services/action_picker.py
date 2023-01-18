@@ -60,166 +60,178 @@ class ActionPickerService(object):
     def construct_response(self, response):
         """Construct the response."""
         print(f"Constructing response : {response}")
-        try:
-            if response["body"].get('response_type') == "interactive":
-                print("Constructing interactive response : ")
-                return {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": response.get('phone_number'),
-                    "type": "interactive",
-                    "interactive": json.dumps({
-                        "type": "list",
-                        "body": {
-                            "text": f"{response['body'].get('text')}"
-                        },
-                        "action": {
-                            "button": f"{response['body'].get('menu_name')}",
-                            "sections": [
-                                {
-                                    "title": "Select Option",
-                                    "rows": [
-                                        {
-                                            "id": item['id'],
-                                            "title":  f"{item['name']}",
-                                            "description": f"{item['description']}",
-                                        } for item in response['body'].get('menu_items')
-                                    ]
+        
+        if response["body"].get('response_type') == "interactive":
+            print("Constructing interactive response : ")
+            return {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": response.get('phone_number'),
+                "type": "interactive",
+                "interactive": json.dumps({
+                    "type": "list",
+                    "body": {
+                        "text": f"{response['body'].get('text')}"
+                    },
+                    "action": {
+                        "button": f"{response['body'].get('menu_name')}",
+                        "sections": [
+                            {
+                                "title": "Select Option",
+                                "rows": [
+                                    {
+                                        "id": item['id'],
+                                        "title":  f"{item['name']}",
+                                        "description": f"{item['description']}",
+                                    } for item in response['body'].get('menu_items')
+                                ]
+                            }
+                        ]
+                    }
+                })
+            }
+        
+        elif response["body"].get('response_type') == "button":
+            chat_response =  {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": response.get('phone_number'),
+                "type": "interactive",
+                "interactive": {
+                    "type": "button",
+                    "body": {
+                        "text": f"{response['body'].get('text')}"
+                    },
+                    "action": {
+                        "buttons": [
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "back",
+                                    "title": "Back"
                                 }
-                            ]
-                        }
-                    })
-                }
-            
-            elif response["body"].get('response_type') == "button":
-                chat_response =  {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": response.get('phone_number'),
-                    "type": "interactive",
-                    "interactive": {
-                        "type": "button",
-                        "body": {
-                            "text": f"{response['body'].get('text')}"
-                        },
-                        "action": {
-                            "buttons": [
-                                {
-                                    "type": "reply",
-                                    "reply": {
-                                        "id": "back",
-                                        "title": "Back"
-                                    }
-                                },
-                                {
-                                    "type": "reply",
-                                    "reply": {
-                                        "id": "menu",
-                                        "title": "Menu"
-                                    }
+                            },
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "menu",
+                                    "title": "Menu"
                                 }
-                            ]
-                        }
+                            }
+                        ]
                     }
                 }
-                if response["body"].get('exclude_back'):
-                    chat_response["interactive"]["action"]["buttons"].pop(0)
-                chat_response["interactive"] = json.dumps(chat_response["interactive"])
-                return chat_response
-            
-            elif response["body"].get('response_type') == "download":
-                return {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": response.get('phone_number'),
-                    "type": "interactive",
-                    "interactive": json.dumps({
-                        "type": "button",
-                        "body": {
-                            "text": f"{response['body'].get('text')}"
-                        },
-                        "action": {
-                            "buttons": [
-                                {
-                                    "type": "reply",
-                                    "reply": {
-                                        "id": "download",
-                                        "title": "Download"
-                                    }
-                                },
-                                {
-                                    "type": "reply",
-                                    "reply": {
-                                        "id": "upload",
-                                        "title": "Upload"
-                                    }
+            }
+            if response["body"].get('exclude_back'):
+                chat_response["interactive"]["action"]["buttons"].pop(0)
+            chat_response["interactive"] = json.dumps(chat_response["interactive"])
+            return chat_response
+        
+        elif response["body"].get('response_type') == "download":
+            return {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": response.get('phone_number'),
+                "type": "interactive",
+                "interactive": json.dumps({
+                    "type": "button",
+                    "body": {
+                        "text": f"{response['body'].get('text')}"
+                    },
+                    "action": {
+                        "buttons": [
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "download",
+                                    "title": "Download"
                                 }
-                            ]
-                        }
-                    })
-                }
-
-            elif response["body"].get('response_type') == "document":
-                return {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": response.get('phone_number'),
-                    "type": "document",
-                    "document": json.dumps({
-                        "link": "https://bow-space.com/media/resources/RAND_RR4367.pdf",
-                        "caption": response["body"].get('caption'),
-                    })
-                }
-
-            elif response["body"].get('response_type') == "pay_download":
-                resp = {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": response.get('phone_number'),
-                    "type": "interactive",
-                    "interactive": {
-                        "type": "button",
-                        "body": {
-                            "text": f"{response['body'].get('text')}"
-                        },
-                        "action": {
-                            "buttons": [
-                                {
-                                    "type": "reply",
-                                    "reply": {
-                                        "id": f"payment_{response['body'].get('id')}",
-                                        "title": "Payment"
-                                    }
-                                },
-                                {
-                                    "type":
-                                    "reply",
-                                    "reply": {
-                                        "id": f"download_{response['body'].get('id')}",
-                                        "title": "Download"
-                                    }
+                            },
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "upload",
+                                    "title": "Upload"
                                 }
-                            ]
-                        }
+                            }
+                        ]
+                    }
+                })
+            }
+
+        elif response["body"].get('response_type') == "document":
+            return {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": response.get('phone_number'),
+                "type": "document",
+                "document": json.dumps({
+                    "link": "https://bow-space.com/media/resources/RAND_RR4367.pdf",
+                    "caption": response["body"].get('caption'),
+                })
+            }
+
+        elif response["body"].get('response_type') == "pay_download":
+            resp = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": response.get('phone_number'),
+                "type": "interactive",
+                "interactive": {
+                    "type": "button",
+                    "body": {
+                        "text": f"{response['body'].get('text')}"
+                    },
+                    "action": {
+                        "buttons": [
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": f"payment_{response['body'].get('id')}",
+                                    "title": "Make Payment"
+                                }
+                            },
+                            {
+                                "type":
+                                "reply",
+                                "reply": {
+                                    "id": f"download_{response['body'].get('id')}",
+                                    "title": "Download"
+                                }
+                            }
+                        ]
                     }
                 }
-                if resp["body"].get('exclude_back'):
-                    resp["interactive"]["action"]["buttons"].pop(1)
-                resp["interactive"] = json.dumps(resp["interactive"])
-                return resp
-            else:
-                return {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": response.get('phone_number'),
-                    "type": "text",
-                    "text": json.dumps({
-                        "preview_url": True,
-                        "body":  response['body'].get('text')
-                    })
-                }
-        except Exception as e:
-            print("ERROR : ", e)
+            }
+            if response["body"].get('exclude_download'):
+                resp["interactive"]["action"]["buttons"].pop(1)
+            resp["interactive"] = json.dumps(resp["interactive"])
+            return resp
+        elif response["body"].get('response_type') == "pay":
+            return {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": response.get('phone_number'),
+                "type": "interactive",
+                "interactive": json.dumps({
+                    "type": "button",
+                    "body": {
+                        "text": f"{response['body'].get('text')}"
+                    },
+                    "action": {
+                        "buttons": [
+                        {
+                            "type": "web_url",
+                            "url": f"https://bow-space.com/paynow/{response['body'].get('id')}",
+                            "title": "PayNow",
+                            "webview_height_ratio": "full",
+                            "messenger_extensions": True,
+                        }
+                    ]
+                    }
+                })
+            }
+        else:
             return {
                 "messaging_product": "whatsapp",
                 "recipient_type": "individual",
@@ -227,9 +239,10 @@ class ActionPickerService(object):
                 "type": "text",
                 "text": json.dumps({
                     "preview_url": True,
-                    "body":  "Error occured"
+                    "body":  response['body'].get('text')
                 })
             }
+            
     def get_action(self):
         """Get the action."""
         state = self.session.get('state') if self.session else None

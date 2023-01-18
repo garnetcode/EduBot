@@ -905,70 +905,70 @@ class ActionValidator(object):
             }
         elif session["data"].get("action") == "upload":
             
-            try:
-                url_regex = re.compile(
-                    r'^(?:http|ftp)s?://' # http:// or https://
-                    r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
-                    r'localhost|' #localhost...
-                    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-                    r'(?::\d+)?' # optional port
-                    r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-                if url_regex.match(message):
-                    file = requests.get(url=message, headers={
-                                    'Authorization': f"Bearer {config('CLOUD_API_TOKEN')}"})
-                    bytesio_o = BytesIO(file.content)
+            
+            url_regex = re.compile(
+                r'^(?:http|ftp)s?://' # http:// or https://
+                r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
+                r'localhost|' #localhost...
+                r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+                r'(?::\d+)?' # optional port
+                r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+            if url_regex.match(message):
+                file = requests.get(url=message, headers={
+                                'Authorization': f"Bearer {config('CLOUD_API_TOKEN')}"})
+                bytesio_o = BytesIO(file.content)
 
-                    obj = InMemoryUploadedFile(
-                        file=bytesio_o,
-                        field_name='file',
-                        name=payload.get("filename"),
-                        content_type=file.headers.get("content-type"),
-                        size=sys.getsizeof(bytesio_o),
-                        charset="Unicode - UTF8"
-                    )
-                    #pylint: disable=no-member
-                    work = PendingWork.objects.get(id=session["data"]["assignment_id"])
-                    asignment = Assignment.objects.create(
-                        title=f"{work.title} - {user.first_name} {user.last_name}",
-                        file=obj,
-                        status="Completed",
-                        referenced_work=work,
-                        submitted_by=user
-                    )
-                    work.submitted_assignments.add(asignment)
-                    work.save()
-                    session["data"]["action"] = None
-                    cache.set(f"{phone_number}_session", session)
-                    return {
-                        "is_valid": True,
-                        "data": user,
-                        "message": {
-                            "exclude_back": True,
-                            "response_type": "pay_download",
-                            "text": "Your assignment has been submitted successfully.",
-                        }
+                obj = InMemoryUploadedFile(
+                    file=bytesio_o,
+                    field_name='file',
+                    name=payload.get("filename"),
+                    content_type=file.headers.get("content-type"),
+                    size=sys.getsizeof(bytesio_o),
+                    charset="Unicode - UTF8"
+                )
+                #pylint: disable=no-member
+                work = PendingWork.objects.get(id=session["data"]["assignment_id"])
+                asignment = Assignment.objects.create(
+                    title=f"{work.title} - {user.first_name} {user.last_name}",
+                    file=obj,
+                    status="Completed",
+                    referenced_work=work,
+                    submitted_by=user
+                )
+                work.submitted_assignments.add(asignment)
+                work.save()
+                session["data"]["action"] = None
+                cache.set(f"{phone_number}_session", session)
+                return {
+                    "is_valid": True,
+                    "data": user,
+                    "message": {
+                        "exclude_back": True,
+                        "response_type": "pay_download",
+                        "text": "Your assignment has been submitted successfully.",
                     }
-                else:
-                    return {
-                        "is_valid": False,
-                        "data": user,
-                        "message": {
-                            "response_type": "text",
-                            "text": "Please upload and send your assignment as a document."
-                        }
-                    }
-            #pylint: disable=broad-except
-            except Exception as e:
-                print("Error: ", e)
+                }
+            else:
                 return {
                     "is_valid": False,
                     "data": user,
                     "message": {
-                        "exclude_back": True,
-                        "response_type": "button",
-                        "text": "There was an error while processing your request. Please try again.",
+                        "response_type": "text",
+                        "text": "Please upload and send your assignment as a document."
                     }
                 }
+            #pylint: disable=broad-except
+            # except Exception as e:
+            #     print("Error: ", e)
+            #     return {
+            #         "is_valid": False,
+            #         "data": user,
+            #         "message": {
+            #             "exclude_back": True,
+            #             "response_type": "button",
+            #             "text": "There was an error while processing your request. Please try again.",
+            #         }
+            #     }
         elif message == "my_assignments":
             # filter pending work if user is enrolled in the course and user not in the list of submitted assignments
             if pending_work:
@@ -1024,67 +1024,57 @@ class ActionValidator(object):
                 }
             }     
         elif session["data"].get("action") == "receive_assignment":
-            try:
-                url_regex = re.compile(
-                    r'^(?:http|ftp)s?://' # http:// or https://
-                    r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
-                    r'localhost|' #localhost...
-                    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-                    r'(?::\d+)?' # optional port
-                    r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-                if url_regex.match(message):
-                    file = requests.get(url=message, headers={
-                                    'Authorization': f"Bearer {config('CLOUD_API_TOKEN')}"})
-                    bytesio_o = BytesIO(file.content)
+            # try:
+            url_regex = re.compile(
+                r'^(?:http|ftp)s?://' # http:// or https://
+                r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
+                r'localhost|' #localhost...
+                r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+                r'(?::\d+)?' # optional port
+                r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+            if url_regex.match(message):
+                file = requests.get(url=message, headers={
+                                'Authorization': f"Bearer {config('CLOUD_API_TOKEN')}"})
+                bytesio_o = BytesIO(file.content)
 
-                    obj = InMemoryUploadedFile(
-                        file=bytesio_o,
-                        field_name='file',
-                        name=payload.get("filename"),
-                        content_type=file.headers.get("content-type"),
-                        size=sys.getsizeof(bytesio_o),
-                        charset="Unicode - UTF8"
-                    )
-                    assignment = Assignment.objects.create(
-                        assignment_type="Outsourced",
-                        status="Pending",
-                        submitted_by=user,
-                        file=obj
+                obj = InMemoryUploadedFile(
+                    file=bytesio_o,
+                    field_name='file',
+                    name=payload.get("filename"),
+                    content_type=file.headers.get("content-type"),
+                    size=sys.getsizeof(bytesio_o),
+                    charset="Unicode - UTF8"
+                )
+                assignment = Assignment.objects.create(
+                    assignment_type="Outsourced",
+                    status="Pending",
+                    submitted_by=user,
+                    file=obj
 
-                    )
-                    payment = Payment.objects.create(
-                        user=user,
-                        amount=0,
-                        course=Course.objects.get(code="COUT"),
-                        payment_type="Outsource",
-                        payment_status="Awaiting Payment"
-                    )
-                    assignment.payment = payment
-                    assignment.save()
+                )
+                payment = Payment.objects.create(
+                    user=user,
+                    amount=0,
+                    course=Course.objects.get(code="COUT"),
+                    payment_type="Outsource",
+                    payment_status="Awaiting Payment"
+                )
+                assignment.payment = payment
+                assignment.save()
 
-                    session["data"]["action"] = "pending_payment"
-                    cache.set(f"{phone_number}_session", session)
-                    return {
-                        "is_valid": True,
-                        "data": user,
-                        "message": {
-                            "exclude_download": True,
-                            "response_type": "pay_download",
-                            "id": payment.id,
-                            "text": f"We have received your assignment referenced as Assignment {assignment.id}.\nPlease note that you will be charged a fee for this service. Complete the payment process so we can start working on it.\n\nThank you for using our service.",
-                        }
+                session["data"]["action"] = "pending_payment"
+                cache.set(f"{phone_number}_session", session)
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "exclude_download": True,
+                        "response_type": "pay_download",
+                        "id": payment.id,
+                        "text": f"We have received your assignment referenced as Assignment {assignment.id}.\n\nPlease note that you will be charged a fee for this service. Complete the payment process so we can start working on it.\n\nThank you for using our service.",
                     }
-                else:
-                    return {
-                        "is_valid": False,
-                        "data": user,
-                        "message": {
-                            "response_type": "text",
-                            "text": "Please upload and send your assignment as a document."
-                        }
-                    }
-            except Exception as e:
-                print(e)
+                }
+            else:
                 return {
                     "is_valid": False,
                     "data": user,
@@ -1093,6 +1083,7 @@ class ActionValidator(object):
                         "text": "Please upload and send your assignment as a document."
                     }
                 }
+              
         elif session["data"].get("action") == "get_help" and message == "pending":
             session["data"]["action"] = "pending_payment"
             cache.set(f"{phone_number}_session", session)
@@ -1121,18 +1112,59 @@ class ActionValidator(object):
                 }
             }
         elif session["data"].get("action") == "pending_payment" and message.startswith("payment_"):
-            if message.split("_")[1] in [str(work.id) for work in Assignment.objects.filter(assignment_type="Outsourced")]:
-                assignment_id = message.split("_")[1]
-                assignment = Assignment.objects.get(id=assignment_id)
-                if assignment:
-                    return {
-                        "is_valid": False,
-                        "data": user,
-                        "message": {
-                            "response_type": "pay_download",
-                            "text": f"Assignment: Assignment {assignment.id}\nAssignment Status: {assignment.status}\nPayment Status : {assignment.payment.status}\n\n*NB:* _You will be charged a fee for this service & we will only start working on it once you have completed the payment process._",
-                        }
-                    }               
+            if message.split("_")[1] in [str(payment.id) for payment in Payment.objects.filter(user=user, payment_status="Awaiting Payment")]:
+               session["data"]["action"] = "make_payment"
+               cache.set(f"{phone_number}_session", session)
+               return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "interactive",
+                        "text": "Pay For Assignment.",
+                        "username": f"{user.first_name} {user.last_name}",
+                        "menu_name": "💳 Pay",
+                        "menu_items" :[
+                            {
+                                "id": "paypal",
+                                "name": "PayPal",
+                                "description": "Complete purchase with PayPal",
+                            },
+                            {
+                                "id": "paynow",
+                                "name": "PayNow",
+                                "description": "Complete purchase with PayNow",
+                            },
+                        ]
+                    }
+                }
+
+        elif session["data"].get("action") == "make_payment" and message == "paypal":
+            session["data"]["action"] = "paypal_payment"
+            cache.set(f"{phone_number}_session", session)
+            return {
+                "is_valid": False,
+                "data": user,
+                "id": "paynow",
+                "message": {
+                    "response_type": "pay",
+                    "text": "Please click  the button below to complete your purchase.",
+                    
+                }
+            }
+        elif session["data"].get("action") == "make_payment" and message == "paynow":
+            session["data"]["action"] = "paynow_payment"
+            cache.set(f"{phone_number}_session", session)
+            return {
+                "is_valid": False,
+                "data": user,
+                "id": "paynow",
+                "message": {
+                    "response_type": "pay",
+                    "text": "Please click  the button below to complete your purchase.",
+                    
+                }
+            }
+        print("here", session["data"].get("action"), message)         
         return {
             "is_valid": False,
             "data": user,
