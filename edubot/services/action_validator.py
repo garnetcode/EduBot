@@ -725,7 +725,15 @@ class ActionValidator(object):
                 else:
                     # TODO: Handle back button
                     # TODO: Handle course operations
-                    pass
+                    return {
+                        "is_valid": False,
+                        "data": user.first(),
+                        "message": {
+                            "exclude_back": True,
+                            "response_type": "button",
+                            "text": "Course Menu\n\nCourse Operations (Tutorials & Quizz) Implementation is in progress.\n\nComing soon, please try again later.",
+                        }
+                    }
 
     def profile(self, phone_number, message, session, payload=dict):
         """Profile menu"""
@@ -957,19 +965,9 @@ class ActionValidator(object):
                         "text": "Please upload and send your assignment as a document."
                     }
                 }
-            #pylint: disable=broad-except
-            # except Exception as e:
-            #     print("Error: ", e)
-            #     return {
-            #         "is_valid": False,
-            #         "data": user,
-            #         "message": {
-            #             "exclude_back": True,
-            #             "response_type": "button",
-            #             "text": "There was an error while processing your request. Please try again.",
-            #         }
-            #     }
+           
         elif message == "my_assignments":
+            cache.set(f"{phone_number}_session", session)
             # filter pending work if user is enrolled in the course and user not in the list of submitted assignments
             if pending_work:
                 return {
@@ -994,6 +992,7 @@ class ActionValidator(object):
                     "text": "You have not been assigned any assignments yet. Please check back later.",
                 }
             }  
+        
         elif message == "get_help":
             session["data"]["action"] = message
             cache.set(f"{phone_number}_session", session)
@@ -1089,6 +1088,8 @@ class ActionValidator(object):
             cache.set(f"{phone_number}_session", session)
             pending_work = Assignment.objects.filter(assignment_type="Outsourced").order_by("-created_at")[:7]
             if pending_work:
+                session["data"]["action"] = "pending_payment"
+                cache.set(f"{phone_number}_session", session)
                 return {
                     "is_valid": False,
                     "data": user,
@@ -1098,7 +1099,7 @@ class ActionValidator(object):
                         "username": f"{user.first_name} {user.last_name}",
                         "menu_name": "📝 Pending",
                         "menu_items" :[
-                            {"id": f"payment_{work.id}", "name": f"Assignment {work.id}", "description": f"Status :{work.status}"} for work in pending_work
+                            {"id": f"payment_{work.payment.id}", "name": f"Assignment {work.id}", "description": f"Status :{work.status}"} for work in pending_work if work.payment.payment_status == "Awaiting Payment"
                         ]
 
                     }
@@ -1185,7 +1186,7 @@ class ActionValidator(object):
                 "message": {
                     "exclude_back": True,
                     "response_type": "button",
-                    "text": "Payment implementation will be done here.\n\nComing soon...",
+                    "text": "TODO: \nThis is where the PayPal & PayNow payment implementations will be done.\n\nComing soon...",
                 }
             }       
         return {
