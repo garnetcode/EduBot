@@ -840,7 +840,7 @@ class ActionValidator(object):
                 "data": user.first(),
                 "message": {
                     "response_type": "button",
-                    "text": f"*Payment Details*\n\n*Course: _{payment.course.name}_*\n*Amount:* ${payment.amount}\n*Date:* _{payment.created_at.strftime('%d %b %Y')}_\n*Status:* _{payment.payment_status}_\n*Package:* _{payment.package.name.title()}_\n\n",
+                    "text": f"*Payment Details*\n\n*Course: _{payment.course.name}_*\n*Amount:* ${payment.amount}\n*Date:* _{payment.created_at.strftime('%d %b %Y')}_\n*Status:* _{payment.payment_status}_\n\n",
                 }
             }
         if payments:
