@@ -676,7 +676,7 @@ class ActionValidator(object):
                     "is_valid": False,
                     "data": user.first(),
                     "message": {
-                        "response_type": "text",
+                        "response_type": "button",
                         "text": "Oops! You are not enrolled in any course at the moment.  Please try again later.",
                     }
                 }
