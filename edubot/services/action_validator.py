@@ -1144,12 +1144,18 @@ class ActionValidator(object):
             return {
                 "is_valid": False,
                 "data": user,
-                "id": "paynow",
+                "id": "paypal",
                 "message": {
-                    "response_type": "pay",
-                    "text": "Please click  the button below to complete your purchase.",
-                    
-                }
+                        "response_type": "interactive",
+                        "text": "Package Menu",
+                        "username": f"{user.first_name} {user.last_name}",
+                        "menu_name": "📦 Packages",
+                        "menu_items" :[
+                            {"id": "package_1", "name": "Package 1 ($10)", "description": "Delivery in 2 weeks"},
+                            {"id": "package_2", "name": "Package 2 ($20)", "description": "Delivery in 5 days"},
+                            {"id": "package_3", "name": "Package 3 ($30)", "description": "Delivery in 72 hours"},
+                        ]
+                    }
             }
         elif session["data"].get("action") == "make_payment" and message == "paynow":
             session["data"]["action"] = "paynow_payment"
@@ -1159,12 +1165,29 @@ class ActionValidator(object):
                 "data": user,
                 "id": "paynow",
                 "message": {
-                    "response_type": "pay",
-                    "text": "Please click  the button below to complete your purchase.",
-                    
-                }
+                        "response_type": "interactive",
+                        "text": "Package Menu",
+                        "username": f"{user.first_name} {user.last_name}",
+                        "menu_name": "📦 Packages",
+                        "menu_items" :[
+                            {"id": "package_1", "name": "Package 1 ($10)", "description": "Delivery in 2 weeks"},
+                            {"id": "package_2", "name": "Package 2 ($20)", "description": "Delivery in 5 days"},
+                            {"id": "package_3", "name": "Package 3 ($30)", "description": "Delivery in 72 hours"},
+                        ]
+                    }
             }
-        print("here", session["data"].get("action"), message)         
+        elif session["data"].get("action") == "paypal_payment"  or session["data"].get("action") == "paynow_payment" and message.startswith("package_"):
+            session["data"]["action"] = "confirm_payment"
+            cache.set(f"{phone_number}_session", session)
+            return {
+                "is_valid": True,
+                "data": user,
+                "message": {
+                    "exclude_back": True,
+                    "response_type": "button",
+                    "text": "Payment implementation will be done here.\n\nComing soon...",
+                }
+            }       
         return {
             "is_valid": False,
             "data": user,
