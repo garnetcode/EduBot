@@ -37,7 +37,7 @@ class PaymentsWebHook(APIView):
             payment.course.save()
 
             receipt_like_template = f"""
-                *EduBot ✅*\n\nThank you for subscribing to *{payment.course.name}*.\n\nYour payment of *$ {payment.package.price}* has been received.\n\nIf you have any questions regarding your payment, please contact us at admin@edubot.com or call 263782624032
+                *EduBot ✅*\n\nThank you for subscribing to *{payment.course.name}*.\n\nYour payment of *$ {payment.package.price}* has been received.\n\nIf you have any questions regarding your payment, please contact us at \n\n*[admin@edubot.com]* \n\nor call \n\n*[263771516726]*
             """
             receipt ={
                 "messaging_product": "whatsapp",
@@ -55,7 +55,7 @@ class PaymentsWebHook(APIView):
                                 "type": "reply",
                                 "reply": {
                                     "id": "menu",
-                                    "title": "Menu"
+                                    "title": "🏠 Menu"
                                 }
                             }
                         ]
@@ -65,7 +65,7 @@ class PaymentsWebHook(APIView):
         elif status == "Awaiting Delivery":
             payment = Payment.objects.get(reference=reference)
             receipt_like_template = f"""
-                *EduBot ✅*\n\nThank you for subscribing to {payment.course.name}.\n\nYour payment of ${payment.package.price} with payment id {payment.id} is being processed and will be delivered shortly.\n\nIf you have any questions regarding your payment, please contact us at  admin@edubot.com or call 263782624032.
+                *EduBot ✅*\n\nThank you for subscribing to {payment.course.name}.\n\nYour payment of ${payment.package.price} with payment id {payment.id} is being processed and will be delivered shortly.\n\nIf you have any questions regarding your payment, please contact us at  \n\n*[admin@edubot.com]* \n\nor call \n\n*[263771516726]*
                 """
             receipt ={
                 "messaging_product": "whatsapp",
@@ -83,7 +83,7 @@ class PaymentsWebHook(APIView):
                                 "type": "reply",
                                 "reply": {
                                     "id": "menu",
-                                    "title": "Menu"
+                                    "title": "🏠 Menu"
                                 }
                             }
                         ]
@@ -109,7 +109,7 @@ class PaymentsWebHook(APIView):
                                 "type": "reply",
                                 "reply": {
                                     "id": "menu",
-                                    "title": "Menu"
+                                    "title": "🏠 Menu"
                                 }
                             }
                         ]
@@ -134,14 +134,14 @@ class PaymentsWebHook(APIView):
                                 "type": "reply",
                                 "reply": {
                                     "id": cache.get(payment.user.phone_number).get("data").get("payee") if cache.get(payment.user.phone_number) else "retry",
-                                    "title": "Retry"
+                                    "title": "🔄 Retry"
                                 }
                             },
                             {
                                 "type": "reply",
                                 "reply": {
                                     "id": "menu",
-                                    "title": "Menu"
+                                    "title": "🏠 Menu"
                                 }
                             }
                         ]

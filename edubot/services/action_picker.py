@@ -108,14 +108,14 @@ class ActionPickerService(object):
                                 "type": "reply",
                                 "reply": {
                                     "id": "back",
-                                    "title": "Back"
+                                    "title": "🔙 Back"
                                 }
                             },
                             {
                                 "type": "reply",
                                 "reply": {
                                     "id": "menu",
-                                    "title": "Menu"
+                                    "title": "🏠 Menu"
                                 }
                             }
                         ]
@@ -144,14 +144,14 @@ class ActionPickerService(object):
                                 "type": "reply",
                                 "reply": {
                                     "id": "download",
-                                    "title": "Download"
+                                    "title": "📥 Download"
                                 }
                             },
                             {
                                 "type": "reply",
                                 "reply": {
                                     "id": "upload",
-                                    "title": "Upload"
+                                    "title": "📤 Upload"
                                 }
                             }
                         ]
@@ -188,7 +188,7 @@ class ActionPickerService(object):
                                 "type": "reply",
                                 "reply": {
                                     "id": f"payment_{response['body'].get('id')}",
-                                    "title": "Make Payment"
+                                    "title": "💳 Pay"
                                 }
                             },
                             {
@@ -196,7 +196,7 @@ class ActionPickerService(object):
                                 "reply",
                                 "reply": {
                                     "id": f"download_{response['body'].get('id')}",
-                                    "title": "Download"
+                                    "title": "📥 Download"
                                 }
                             }
                         ]

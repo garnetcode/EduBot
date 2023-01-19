@@ -61,13 +61,13 @@ class ActionValidator(object):
                     "username": "Welcome back to EduBot. What would you like to do?",
                     "menu_name": "Main Menu",
                     "menu_items" :[
-                        {"id": "enroll", "name": "Enroll", "description": "Enroll in a course"},
-                        {"id": "courses", "name": "Courses", "description": "View your courses"},
-                        {"id": "assignments", "name": "Assignments", "description": "Go to assignments"},
-                        {"id": "payments", "name": "Payments", "description": "View your payments"},
-                        {"id": "profile", "name": "Profile", "description": "View your profile"},
-                        {"id": "help", "name": "Get Started", "description": "User guide"},
-                        {"id": "about", "name": "About Us", "description": "Contact Us"},           
+                        {"id": "enroll", "name": "📂 Enroll", "description": "Enroll in a course"},
+                        {"id": "courses", "name": "📚 Courses", "description": "View your courses"},
+                        {"id": "assignments", "name": "📝 Assignments", "description": "Go to assignments"},
+                        {"id": "payments", "name": "💳 Payments", "description": "View your payments"},
+                        {"id": "profile", "name": "👤 Profile", "description": "View your profile"},
+                        {"id": "help", "name": "🆘 Help", "description": "User guide"},
+                        {"id": "about", "name": "ℹ️ About Us", "description": "Contact Us"},           
                     ]
                 }
             }
@@ -80,7 +80,7 @@ class ActionValidator(object):
             "data": None,
             "message": {
                 "response_type": "text",
-                "text": "Welcome to EduBot. Sign up to get started.\n\nWhat is your first name?"
+                "text": "Welcome to *EduBot*. Let's sign you up to get started.\n\nWhat is your first name?"
             }
         }       
 
@@ -102,18 +102,18 @@ class ActionValidator(object):
                     "username": f"{user.first().first_name} {user.first().last_name}",
                     "menu_name": "🏠 Main Menu",
                     "menu_items" :[
-                        {"id": "enroll", "name": "Enroll", "description": "Enroll in a course"},
-                        {"id": "courses", "name": "Courses", "description": "View your courses"},
-                        {"id": "assignments", "name": "Assignments", "description": "Go to assignments"},
-                        {"id": "payments", "name": "Payments", "description": "View your payments"},
-                        {"id": "profile", "name": "Profile", "description": "View your profile"},
-                        {"id": "help", "name": "Get Started", "description": "User guide"},
-                        {"id": "about", "name": "About Us", "description": "Contact Us"},
+                         {"id": "enroll", "name": "📂 Enroll", "description": "Enroll in a course"},
+                        {"id": "courses", "name": "📚 Courses", "description": "View your courses"},
+                        {"id": "assignments", "name": "📝 Assignments", "description": "Go to assignments"},
+                        {"id": "payments", "name": "💳 Payments", "description": "View your payments"},
+                        {"id": "profile", "name": "👤 Profile", "description": "View your profile"},
+                        {"id": "help", "name": "🆘 Help", "description": "User guide"},
+                        {"id": "about", "name": "ℹ️ About Us", "description": "Contact Us"}, 
                         
                     ]
                 }
             }
-        message = "Welcome to EduBot. Sign up to get started.\n\nWhat is your first name?"  if not user.exists() else ""
+        message = "Welcome to *EduBot*. Sign up to get started.\n\nWhat is your first name?"  if not user.exists() else ""
         return {
             "is_valid": user.exists(),
             "data": user.first() if user.exists() else None, 
@@ -168,7 +168,8 @@ class ActionValidator(object):
                     message = None
 
                 if not session["data"].get("email") and message:
-                    email_address_regex = r"^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$"
+                    # Validate email including emails that start with numbers, can have hyphens and underscores and Capital letters
+                    email_address_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
                     print("Validating email address", re.match(email_address_regex, message))
                     if not re.match(email_address_regex, message):
                         return {
@@ -207,7 +208,7 @@ class ActionValidator(object):
             print(message)
         else:
             serializer.save()
-            message = f"Registration successful, thank you {serializer.data.get('first_name')} {serializer.data.get('last_name')} for registering with EduBot.\n\nPress *menu* to proceed to your account."
+            message = f"Welcome *{serializer.data.get('first_name')} {serializer.data.get('last_name')}* to *EduBot*.\n\nYou have successfully registered.You can now access the *EduBot* menu to get started."
         return {
             "is_valid": is_valid,
             "data": serializer.data if is_valid else serializer.errors,
@@ -248,13 +249,13 @@ class ActionValidator(object):
                 "username": f"{user.first().first_name} {user.first().last_name}",
                 "menu_name": "🏠 Main Menu",
                 "menu_items" :[
-                    {"id": "enroll", "name": "Enroll", "description": "Enroll in a course"},
-                    {"id": "courses", "name": "Courses", "description": "View your courses"},
-                    {"id": "assignments", "name": "Assignments", "description": "Go to assignments"},
-                    {"id": "payments", "name": "Payments", "description": "View your payments"},
-                    {"id": "profile", "name": "Profile", "description": "View your profile"},
-                    {"id": "help", "name": "Get Started", "description": "User guide"},
-                    {"id": "about", "name": "About Us", "description": "Contact Us"},
+                     {"id": "enroll", "name": "📂 Enroll", "description": "Enroll in a course"},
+                        {"id": "courses", "name": "📚 Courses", "description": "View your courses"},
+                        {"id": "assignments", "name": "📝 Assignments", "description": "Go to assignments"},
+                        {"id": "payments", "name": "💳 Payments", "description": "View your payments"},
+                        {"id": "profile", "name": "👤 Profile", "description": "View your profile"},
+                        {"id": "help", "name": "🆘 Help", "description": "User guide"},
+                        {"id": "about", "name": "ℹ️ About Us", "description": "Contact Us"}, 
                 ]
             }
         }
@@ -264,7 +265,9 @@ class ActionValidator(object):
         user = User.objects.filter(phone_number=phone_number)
 
         # pylint: disable=no-member
-        courses = Course.objects.all().exclude(code="COUT")
+        user_courses = [course.code for course in user.first().enrolled_courses.all()]
+        user_courses.append("COUT")
+        courses = Course.objects.all().exclude(code__in=user_courses)
         if cache.get(phone_number):
             session = cache.get(phone_number)
 
@@ -384,13 +387,13 @@ class ActionValidator(object):
                                 "username": f"{user.first().first_name} {user.first().last_name}",
                                 "menu_name": "🏠 Main Menu",
                                 "menu_items" :[
-                                    {"id": "enroll", "name": "Enroll", "description": "Enroll in a course"},
-                                    {"id": "courses", "name": "Courses", "description": "View your courses"},
-                                    {"id": "assignments", "name": "Assignments", "description": "Go to assignments"},
-                                    {"id": "payments", "name": "Payments", "description": "View your payments"},
-                                    {"id": "profile", "name": "Profile", "description": "View your profile"},
-                                    {"id": "help", "name": "Get Started", "description": "User guide"},
-                                    {"id": "about", "name": "About Us", "description": "Contact Us"},
+                                    {"id": "enroll", "name": "📂 Enroll", "description": "Enroll in a course"},
+                                    {"id": "courses", "name": "📚 Courses", "description": "View your courses"},
+                                    {"id": "assignments", "name": "📝 Assignments", "description": "Go to assignments"},
+                                    {"id": "payments", "name": "💳 Payments", "description": "View your payments"},
+                                    {"id": "profile", "name": "👤 Profile", "description": "View your profile"},
+                                    {"id": "help", "name": "🆘 Help", "description": "User guide"},
+                                    {"id": "about", "name": "ℹ️ About Us", "description": "Contact Us"}, 
                                 ]
                             }
                         }
@@ -733,7 +736,7 @@ class ActionValidator(object):
                 "data": user.first(),
                 "message": {
                     "response_type": "button",
-                    "text": "You can contact the developer via email: *[developer@edubot.com]*",
+                    "text": "If you have any questions or feedback, please contact the developer at *+263771516726*\n\n Thank you for using EduBot!",
                 }
             }
         return {
@@ -761,7 +764,7 @@ class ActionValidator(object):
             "message": {
                 "exclude_back": True,
                 "response_type": "button",
-                "text": "EduBot is a chatbot that helps you to manage your courses and profile brought to you by Empart.\n\nFor more information, visit *[https://edubot.com]* \nor contact \n*[https://wa.me/2627767646]*",
+                "text": "EduBot is a chatbot that helps \nyou to manage your courses \nand profile brought to you by \n*Empart*.\n\nFor more information, visit \n\n*[https://www.edubot.com]* \n\nor contact us on  \n\n*[https://wa.me/263771516726]*",
             }
         }
 
@@ -780,7 +783,7 @@ class ActionValidator(object):
                 "data": user.first(),
                 "message": {
                     "response_type": "button",
-                    "text": f"*Payment Details*\n\n*Course: _{payment.course.name}_*\n*Amount:* ${payment.amount}\n*Date:* _{payment.created_at.strftime('%d %b %Y')}_\n*Status:* _{payment.payment_status}_\n\n",
+                    "text": f"*Payment Details*\n\n*Course: _{payment.course.name}_*\n*Amount:* ${payment.amount}\n*Date:* _{payment.created_at.strftime('%d %b %Y')}_\n*Status:* _{payment.payment_status} {'✅' if payment.payment_status == 'Paid' else '🚫'}_\n\n",
                 }
             }
         if payments:
@@ -892,7 +895,7 @@ class ActionValidator(object):
                     "data": user,
                     "message": {
                         "exclude_back": True,
-                        "response_type": "pay_download",
+                        "response_type": "button",
                         "text": "Your assignment has been submitted successfully.",
                     }
                 }
@@ -1063,7 +1066,7 @@ class ActionValidator(object):
                         "response_type": "interactive",
                         "text": "Pay For Assignment.",
                         "username": f"{user.first_name} {user.last_name}",
-                        "menu_name": "💳 Pay",
+                        "menu_name": "💳 Complete Payment",
                         "menu_items" :[
                             {
                                 "id": "paypal",
@@ -1138,11 +1141,45 @@ class ActionValidator(object):
                 "username": f"{user.first_name} {user.last_name}",
                 "menu_name": "📝 Assignments",
                 "menu_items" :[
-                    {"id": "my_assignments", "name": "My Assignments", "description": "View your assignments"},
-                    {"id": "get_help", "name": "Outsource Assignment", "description": "Get help with your assignments"},
-                    {"id": "menu", "name": "Main Menu", "description": "Back to main menu"},
+                    {"id": "my_assignments", "name": "📚 Course Assignments", "description": "View your assignments"},
+                    {"id": "get_help", "name": "📝 Outsourced Assignment", "description": "Get help with your assignments"},
+                    {"id": "menu", "name": "🏠 Main Menu", "description": "Back to main menu"},
                 ]
             }
         }
 
-            
+
+
+# emoji for the menu items
+    def get_emoji(self, id):
+        if id == "my_assignments":
+            return "📝"
+        elif id =="enroll":
+            return "📝"
+        elif id == "profile":
+            return "👤"
+        elif id == "outsource":
+            return "📝"
+        elif id == "back":
+            return "🔙"
+        elif id == "download":
+            return "📥"
+        elif id == "upload":
+            return "📤"
+        elif id == "courses":
+            return "📚"
+        elif id == "get_help":
+            return "📚"
+        elif id == "menu":
+            return "🏠"
+        elif id == "paypal":
+            return "💳"
+        elif id == "paynow":
+            return "💳"
+        elif id == "package_1":
+            return "📦"
+        elif id == "package_2":
+            return "📦"
+        elif id == "package_3":
+            return "📦"
+        return ""
