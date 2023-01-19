@@ -10,6 +10,7 @@ from services.action_table import ACTION_TABLE
 from services.action_validator import ActionValidator
 
 cache.clear()
+print("Cache cleared", cache)
 
 
 
@@ -26,8 +27,12 @@ class ActionPickerService(object):
         self.payload = self.parse_payload(payload)
         self.session = cache.get(self.payload.get('phone_number'))
 
-    def parse_payload(self, payload):
+    def parse_payload(self, incoming_message):
         """Parse the action."""
+        oringinal_payload = dict(incoming_message)
+        print("PAYLOAD >>>> ", oringinal_payload)
+            
+        payload =  oringinal_payload['entry'][0]['changes'][0]['value']
         if payload.get('messages'):
             message = payload['messages'][0]
             contact = payload['contacts'][0]
