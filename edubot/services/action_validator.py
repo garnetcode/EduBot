@@ -475,7 +475,7 @@ class ActionValidator(object):
             "is_valid": False,
             "data": user.first(),
             "message": {
-                "response_type": "text",
+                "response_type": "button",
                 "text": "Oops! No courses available at the moment.  Please try again later."
             }
         }
@@ -844,7 +844,7 @@ class ActionValidator(object):
                 }
             }
         elif message == "upload":
-            session["data"]["action"] = message
+            session["data"]["action"] = 'upload'
             cache.set(f"{phone_number}_session", session)
             return {
                 "is_valid": False,
@@ -854,9 +854,8 @@ class ActionValidator(object):
                     "text": "Please upload and send your assignment as a document."
                 }
             }
+        
         elif session["data"].get("action") == "upload":
-            
-            
             url_regex = re.compile(
                 r'^(?:http|ftp)s?://' # http:// or https://
                 r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
@@ -948,14 +947,37 @@ class ActionValidator(object):
                     "username": f"{user.first_name} {user.last_name}",
                     "menu_name": "📝 Get Help",
                     "menu_items" :[
-                        {"id": "outsource", "name": "Upload Assignment", "description": "Upload your assignment"},
-                        {"id": "pending", "name": "View Pending", "description": "View pending assignments"},
-                        {"id": "back", "name": "Back", "description": "Back to assignments menu"},
+                        {"id": "outsource", "name": "📤 Upload Assignment", "description": "Upload your assignment"},
+                        {"id": "pending", "name": "📂 View Pending", "description": "View pending assignments"},
+                        {"id": "back", "name": "🔙 Back", "description": "Back to assignments menu"},
                     ]
                 }
             }
         elif session["data"].get("action") == "get_help" and message == "outsource":
-            session["data"]["action"] = "receive_assignment"
+            session["data"]["action"] = "upload_type"
+            cache.set(f"{phone_number}_session", session)
+            return {
+                "is_valid": False,
+                "data": user,
+                "message": {
+                    "response_type": "interactive",
+                    "text": "Please select the type of assignment you are submitting.",
+                    "menu_name": "Assignment Type",
+                    "menu_items": [
+                        {"id": "math", "name": "Math", "description": "Math"},
+                        {"id": "science", "name": "Science", "description": "Science"},
+                        {"id": "language", "name": "Language", "description": "Language"},
+                        {"id": "social", "name": "Social", "description": "Social"},
+                        {"id": "ict", "name": "ICT", "description": "ICT"},
+                        {"id": "other", "name": "Other", "description": "Other"},
+                    ]
+
+                }
+            }
+            
+
+        elif session["data"].get("action") == "upload_type":
+            session["data"]["action"] = 'receive_assignment'
             cache.set(f"{phone_number}_session", session)
             return {
                 "is_valid": False,
@@ -965,7 +987,8 @@ class ActionValidator(object):
                     "text": "Please upload and send your assignment document and we will get back to you."
                 }
             }     
-        elif session["data"].get("action") == "receive_assignment":
+            
+        elif session["data"].get("action") == "receive_assignment" and message in ["math", "science", "language", "social", "ict", "other"]:
             # try:
             url_regex = re.compile(
                 r'^(?:http|ftp)s?://' # http:// or https://
@@ -1148,38 +1171,3 @@ class ActionValidator(object):
             }
         }
 
-
-
-# emoji for the menu items
-    def get_emoji(self, id):
-        if id == "my_assignments":
-            return "📝"
-        elif id =="enroll":
-            return "📝"
-        elif id == "profile":
-            return "👤"
-        elif id == "outsource":
-            return "📝"
-        elif id == "back":
-            return "🔙"
-        elif id == "download":
-            return "📥"
-        elif id == "upload":
-            return "📤"
-        elif id == "courses":
-            return "📚"
-        elif id == "get_help":
-            return "📚"
-        elif id == "menu":
-            return "🏠"
-        elif id == "paypal":
-            return "💳"
-        elif id == "paynow":
-            return "💳"
-        elif id == "package_1":
-            return "📦"
-        elif id == "package_2":
-            return "📦"
-        elif id == "package_3":
-            return "📦"
-        return ""
