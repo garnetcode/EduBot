@@ -976,7 +976,7 @@ class ActionValidator(object):
             }
             
 
-        elif session["data"].get("action") == "upload_type":
+        elif session["data"].get("action") == "upload_type" and message in ["math", "science", "language", "social", "ict", "other"]:
             session["data"]["action"] = 'receive_assignment'
             cache.set(f"{phone_number}_session", session)
             return {
@@ -988,7 +988,7 @@ class ActionValidator(object):
                 }
             }     
             
-        elif session["data"].get("action") == "receive_assignment" and message in ["math", "science", "language", "social", "ict", "other"]:
+        elif session["data"].get("action") == "receive_assignment":
             # try:
             url_regex = re.compile(
                 r'^(?:http|ftp)s?://' # http:// or https://
