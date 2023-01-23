@@ -584,7 +584,7 @@ class ActionValidator(object):
                     }
                 }
                 cache.set(phone_number, session, 60*60*24)
-                if session["data"]["page"] > 1:
+                if session["data"]["page"] > config('PAGINATION_COUNT', cast=int):
                     base.append({
                         "id": "previous",
                         "name": "Previous",
