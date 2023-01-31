@@ -8,6 +8,7 @@ class Package(models.Model):
             ('bronze', 'BRONZE'),
             ('silver', 'SILVER'),
             ('gold', 'GOLD'),
+            ('platinum', 'PLATINUM'),
         ),
         default='bronze')
     price = models.DecimalField(max_digits=10,
@@ -22,6 +23,7 @@ class Package(models.Model):
             ('1', 'Curated Content'),
             ('2', 'Curated Content + Whatsapp Calls'),
             ('3', 'Curated Content + Whatsapp Calls + Zoom Calls'),
+            ('4', 'Curated Content + Whatsapp Calls + Zoom Calls + Live Classes')
         ), default='1'
     )
 

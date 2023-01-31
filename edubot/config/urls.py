@@ -8,8 +8,14 @@ from payments.views import PaymentsWebHook
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include("api.urls")),
     path("webhook/", PaymentsWebHook.as_view(), name="webhook"),
+    path("api/", include("api.urls")),
+    path("user/", include("users.urls")),
+    path("dashboard/class/", include("tutorials.urls")),
+    path("dashboard/courses/", include("courses.urls")),
+    path("dashboard/package/", include("packages.urls")),
+    path("dashboard/payments/", include("payments.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

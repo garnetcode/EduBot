@@ -6,6 +6,7 @@ import re
 import sys
 import math
 from io import BytesIO
+import datetime
 import requests
 from django.core.cache import cache
 from django.conf import settings
@@ -13,6 +14,8 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from decouple import config
 from courses.models import Course
 from assignments.models import Assignment, PendingWork
+from tutorials.models import CallRequest, Tutorial
+from tutorials.serializers import CallRequestSerializer
 from payments.models import Payment
 from packages.models import Package
 from users.serializers import UserSerializer
@@ -441,7 +444,7 @@ class ActionValidator(object):
                                 "id": course.code,
                                 "name": course.name,
                                 "description": f"Course Code: {course.code}\nCourse Duration: {course.duration} week(s)",
-                            } for course in Course.objects.all().exclude(code="COUT")
+                            } for course in courses[:10]
                         ]
                     }
                 }
@@ -516,7 +519,7 @@ class ActionValidator(object):
                 "data": user.first(),
                 "message": {
                     "response_type": "interactive",
-                    "text": f"Your Enrolled Courses({session['data']['page']} of {session['data']['total_pages']}).",
+                    "text": f"Your Courses({session['data']['page']} of {session['data']['total_pages']}).",
                     "username": f"{user.first().first_name} {user.first().last_name}",
                     "menu_name": "📚 My Courses",
                     "menu_items" :[
@@ -553,7 +556,7 @@ class ActionValidator(object):
                     "data": user.first(),
                     "message": {
                         "response_type": "interactive",
-                        "text": f"Your Enrolled Courses({session['data']['page']} of {session['data']['total_pages']})",
+                        "text": f"Your Courses({session['data']['page']} of {session['data']['total_pages']})",
                         "username": f"{user.first().first_name} {user.first().last_name}",
                         "menu_name": "📚 My Courses",
                         "menu_items" :[
@@ -575,6 +578,7 @@ class ActionValidator(object):
             }
         else:
             if not session["data"].get("selected_course") and message not in [i.code for i in courses]:
+                print("NO SELECTED COURSE AND MESSAGE NOT IN COURSES")
                 session = {
                     "state": "my_courses",
                     "data": {
@@ -606,11 +610,11 @@ class ActionValidator(object):
                 if base and menu_items and courses.count() > self.pagination:
                     menu_items.extend(base)
                 return {
-                    "is_valid": True,
+                    "is_valid": False,
                     "data": user.first(),
                     "message": {
                         "response_type": "interactive",
-                        "text": f"Your Enrolled Courses({session['data']['page']} of {session['data']['total_pages']}).",
+                        "text": f"Your Courses (Page {session['data']['page']} of {session['data']['total_pages']}).",
                         "username": f"{user.first().first_name} {user.first().last_name}",
                         "menu_name": "📚 My Courses",
                         "menu_items" :menu_items
@@ -624,12 +628,14 @@ class ActionValidator(object):
                     }
                 }
             else:
+                print("SELECTED COURSE OR MESSAGE IN COURSES", session["data"].get("selected_course"))
                 if message in [i.code for i in courses]:
                     session["data"]["selected_course"] = message
+                    session["action"] = "course_menu"
                     cache.set(phone_number, session, 60*60*24)
                     course = Course.objects.get(code=message)
                     return {
-                        "is_valid": True,
+                        "is_valid": False,
                         "data": user.first(),
                         "message": {
                             "response_type": "interactive",
@@ -639,44 +645,537 @@ class ActionValidator(object):
                             "menu_items" :[
                                 {
                                     "id": "course_outline",
-                                    "name": "Course Outline",
+                                    "name": "📝 Outline",
                                     "description": "Course Outline"
                                 },
                                 {
-                                    "id": "tutorial",
-                                    "name": "Tutorial",
+                                    "id": "tutorials",
+                                    "name": "📹 Tutorials",
                                     "description": "Course Tutorial"
                                 },
                                 {
                                     "id": "course_material",
-                                    "name": "Course Material",
+                                    "name": "📚 Material",
                                     "description": "Course Material"
                                 },
                                 {
                                     "id": "course_assessment",
-                                    "name": "Course Assessment",
+                                    "name": "📊 Assessment",
                                     "description": "Course Assessment"
                                 },
                                 {
-                                    "id": "back",
-                                    "name": "Back",
+                                    "id": "request_call",
+                                    "name": "👨‍🏫📞 Request Call",
+                                    "description": "Request a call from a tutor"
+                                },
+                                {
+                                    "id": "back_to_courses",
+                                    "name": "🔙 Back",
+                                    "description": "Back to courses"
+                                },
+                            ]
+                        }
+                    }
+                elif message == "course_menu":
+                    session["action"] = "course_menu"
+                    cache.set(phone_number, session, 60*60*24)
+                    course = Course.objects.get(code=session["data"]["selected_course"])
+                    return {
+                        "is_valid": False,
+                        "data": user.first(),
+                        "message": {
+                            "response_type": "interactive",
+                            "text": "Course Menu",
+                            "username": f"{user.first().first_name} {user.first().last_name}",
+                            "menu_name": f"📚 {course.name}",
+                            "menu_items" :[
+                                {
+                                    "id": "course_outline",
+                                    "name": "📝 Outline",
+                                    "description": "Course Outline"
+                                },
+                                {
+                                    "id": "tutorials",
+                                    "name": "📹 Tutorials",
+                                    "description": "Course Tutorial"
+                                },
+                                {
+                                    "id": "course_material",
+                                    "name": "📚 Material",
+                                    "description": "Course Material"
+                                },
+                                {
+                                    "id": "course_assessment",
+                                    "name": "📊 Assessment",
+                                    "description": "Course Assessment"
+                                },
+                                {
+                                    "id": "request_call",
+                                    "name": "👨‍🏫📞 Request Call",
+                                    "description": "Request a call from a tutor"
+                                },
+                                {
+                                    "id": "back_to_courses",
+                                    "name": "🔙 Back",
                                     "description": "Back to courses"
                                 },
                             ]
                         }
                     }
                 else:
-                    # TODO: Handle back button
-                    # TODO: Handle course operations
-                    return {
-                        "is_valid": False,
-                        "data": user.first(),
-                        "message": {
-                            "exclude_back": True,
-                            "response_type": "button",
-                            "text": "Course Menu\n\nCourse Operations (Tutorials & Quizz) Implementation is in progress.\n\nComing soon, please try again later.",
+                    if session["data"].get("selected_course") and  message in ["course_outline","back"]:
+                        session["back"] = -3
+                        cache.set(f"bookmark_{phone_number}", -2, 60*60*24)
+                        course = Course.objects.get(code=session["data"]["selected_course"])
+                        return {
+                            "is_valid": False,
+                            "data": user.first(),
+                            "message": {
+                                "menu": "course_menu",
+                                "exclude_back": True,
+                                "response_type": "button",
+                                "text": f"*_Description_*\n\n{course.description[:1024]}",
+                            }
                         }
-                    }
+                            
+                    else:
+                        print("Message", message, session["data"].get("selected_course"), session['data'].get("action"), session["data"].get("stage"))
+                        if message == "back_to_courses":
+                            session = {
+                                "action": "my_courses",
+                                "data": {
+                                    "page": 1,
+                                    "total_pages": math.ceil(len(courses)/self.pagination),
+                                    "selected_course": None
+                                }
+                            }
+                            cache.set(phone_number, session, 60*60*24)
+                            if session["data"]["page"] > 1:
+                                base.append({
+                                    "id": "previous",
+                                    "name": "Previous",
+                                    "description": "Previous page"
+                                })
+                            if session["data"]["page"] < session["data"]["total_pages"]:
+                                base.append({
+                                    "id": "next",
+                                    "name": "Next",
+                                    "description": "Next page"
+                                })
+                            menu_items =[
+                                {
+                                    "id": course.code,
+                                    "name": course.name,
+                                    "description": f"Course Code: {course.code}\nCourse Duration: {course.duration} week(s)",
+                                } for course in courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination]
+                            ]
+                            if base and menu_items and courses.count() > self.pagination:
+                                menu_items.extend(base)
+                            return {
+                                "is_valid": False,
+                                "data": user.first(),
+                                "message": {
+                                    "response_type": "interactive",
+                                    "text": f"Your Courses (Page {session['data']['page']} of {session['data']['total_pages']}).",
+                                    "username": f"{user.first().first_name} {user.first().last_name}",
+                                    "menu_name": "📚 My Courses",
+                                    "menu_items" :menu_items
+                                }
+                            } if courses else {
+                                "is_valid": False,
+                                "data": user.first(),
+                                "message": {
+                                    "response_type": "button",
+                                    "text": "Oops! You are not enrolled in any course at the moment.  Please try again later.",
+                                }
+                            }
+                        
+                        elif message == "request_call" or session['data'].get("action") == "request_call" or session['data'].get("stage") in ["date_of_call", "agenda"]:
+                            session['data']["action"] = "request_call"
+                            if CallRequest.call_request_exists(user=user.first(), course=Course.objects.get(code=session["data"].get("selected_course")), date_of_call=datetime.datetime.today()):
+                                return {
+                                    "is_valid": False,
+                                    "data": user.first(),
+                                    "message": {
+                                        "menu": "course_menu",
+                                        "exclude_back": True,
+                                        "response_type": "button",
+                                        "text": "Request Call \n\nYou already have another pending call scheduled for today.",
+                                    }
+                                }
+                            payload = session['data'].get('payload')
+                            #date fommat 2020-12-12 12:00 or 2020-12-12 
+                            regex_date_time = r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})\s(?P<hour>\d{2}):(?P<minute>\d{2})$"
+                            regex_date = r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})$"
+                            print("\n\n\n\n#####################Request call", session['data'].get("action"), payload, message)
+                            print("Regex", re.match(regex_date_time, message))
+                            if session['data'].get("stage") == "date_of_call" and (re.match(regex_date_time, message) or re.match(regex_date, message)):
+                                payload["date_of_call"] = message
+                                session['data']["payload"] = payload
+                                session['data']["stage"] = "agenda"
+                                cache.set(phone_number, session, 60*60*24)
+                                return {
+                                    "is_valid": False,
+                                    "data": user.first(),
+                                    "message": {
+                                        "response_type": "text",
+                                        "text": "Request Call\n\nWhat topic or concept would you like to discuss?",
+                                    }
+                                }
+                            if session['data'].get("stage") == "agenda":
+                                payload["agenda"] = message
+                                session['data']["payload"] = payload
+                                cache.set(phone_number, session, 60*60*24)
+
+                            serializer = CallRequestSerializer(data=payload, context={"user": user.first()})
+                            if serializer.is_valid():
+                                serializer.save()
+                                session['data']["action"] = "course_menu"
+                                cache.set(phone_number, session, 60*60*24)
+                                return {
+                                    "is_valid": False,
+                                    "data": user.first(),
+                                    "message": {
+                                        "menu": "course_menu",
+                                        "exclude_back": True,
+                                        "response_type": "button",
+                                        "text": "Request Call\n\nYour request has been received. We will contact you shortly.",
+                                    }
+                                }
+            
+                            else:
+                                print("Invalid serializer", serializer.errors, payload)
+                                if not payload:
+                                    session['data']["payload"] = {
+                                        "requested_by": user.first().id,
+                                        "course": Course.objects.get(code=session["data"]["selected_course"]).id
+                                    }
+                                    session['data']["action"] = "request_call"
+                                    session['data']["stage"] = "date_of_call"
+                                    cache.set(phone_number, session, 60*60*24)
+                                    print("Session", cache.get(phone_number))
+                                    return {
+                                        "is_valid": False,
+                                        "data": user.first(),
+                                        "message": {
+                                            "response_type": "text",
+                                            "text": "Request Call\n\nWhen would you like to be contacted?\n\n_Please enter a valid date and time in the format: *2020-12-31 23:59*_",
+                                        }
+                                    }
+                                #REQUEST CALL FAILED
+                                session['data']["action"] = "course_menu"
+                                session['data']["payload"] = {}
+                                session['data']["stage"] = ""
+
+
+                                cache.set(phone_number, session, 60*60*24)
+                                message = f"{list(serializer.errors.values())[0][0]}".replace("[ErrorDetail(string='" , "").replace("', code='invalid')]", "").replace("YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].", "YYYY-MM-DDThh:mm").lstrip()
+
+                                return {
+                                    "is_valid": False,
+                                    "data": user.first(),
+                                    "message": {
+                                        "menu": "course_menu",
+                                        "exclude_back": True,
+                                        "response_type": "button",
+                                        "text": f"Request Call Failed \n\n{message}",
+                                    }
+                                }
+
+                        elif message == "tutorials" or session['data'].get("action") == "tutorials":
+                            print("Tutorials", session['data'].get("action"), message, session['data'].get("tutorial_stage"))
+                            if session['data'].get("tutorial_stage") is None:
+                                print("Tutorials is Nonne", session['data'].get("action"), message, session['data'].get("tutorial_stage"))
+                                session['data']["tutorial_stage"] = "select_tutorial"
+                                cache.set(phone_number, session, 60*60*24)
+                                tutorials = Tutorial.objects.filter(course__code=session["data"].get("selected_course"))
+                                if tutorials:
+                                    #Pagination for tutorials
+                                    if session['data'].get("action") == "tutorials":
+                                        if message == "next":
+                                            session['data']["page"] += 1
+                                        elif message == "previous":
+                                            session['data']["page"] -= 1
+                                        cache.set(phone_number, session, 60*60*24)
+                                    else:
+                                        session['data']["action"] = "tutorials"
+                                        session['data']["page"] = 1
+                                        cache.set(phone_number, session, 60*60*24)
+                                    #Pagination for tutorials
+                                    tutorials = tutorials[(session['data']["page"]-1)*self.pagination:session['data']["page"]*self.pagination]
+                                    base =[]
+                                    if message == "next":
+                                        base = []
+                                        session["data"]["page"] += 1
+                                        cache.set(phone_number, session, 60*60*24)
+
+                                    if session["data"]["page"] > 1:
+                                        base.append({
+                                            "id": "previous",
+                                            "name": "Previous",
+                                            "description": "Previous page"
+                                        })
+                                    if session["data"]["page"] < session["data"]["total_pages"]:
+                                        base.append({
+                                            "id": "next",
+                                            "name": "Next",
+                                            "description": "Next page"
+                                        })
+                                    if base and tutorials and courses.count() > self.pagination:
+                                        tutorials.extend(base)
+                                    return {
+                                        "is_valid": False,
+                                        "data": user.first(),
+                                        "message": {
+                                            "response_type": "interactive",
+                                            "text": f"Tutorials ({session['data']['page']} of {session['data']['total_pages']}).",
+                                            "username": f"{user.first().first_name} {user.first().last_name}",
+                                            "menu_name": "📹 Tutorials",
+                                            "menu_items" :[
+                                                {
+                                                    "id": f"{tutorial.id}",
+                                                    "name": tutorial.title,
+                                                    "description": tutorial.description[:69] + "..." if len(tutorial.description) > 69 else tutorial.description,
+                                                } for tutorial in tutorials
+                                            ] + base
+                                        }
+                                    }
+                                else:
+                                    return {
+                                        "is_valid": False,
+                                        "data": user.first(),
+                                        "message": {
+                                            "menu": "course_menu",
+                                            "exclude_back": True,
+                                            "response_type": "button",
+                                            "text": "No tutorials\n\n found for the selected course.",
+                                        }
+                                    }
+                            elif session['data'].get("tutorial_stage") == "select_tutorial":
+                                print("Tutorials is select_tutorial", session['data'].get("action"), message, session['data'].get("tutorial_stage"))
+                                uuid4 = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$', re.I)
+                                
+                                session['data']["tutorial_identifier"] = message if uuid4.match(message) else session['data'].get("tutorial_identifier")
+                                print("Tutorials is select_tutorial >>>>>>>>>> ", session['data'].get("tutorial_identifier"))
+                                tutorial = Tutorial.objects.filter(id=session['data']["tutorial_identifier"])
+                                print("Tutorials is select_tutorial", tutorial)
+                                if tutorial:
+                                    tutorial = tutorial.first()
+                                    session['data']["tutorial_stage"] = "ongoing_tutorial"
+                                    session['data']["selected_tutorial"] = message
+                                    cache.set(phone_number, session, 60*60*24)
+                                    # deliver tutorial
+                                    print("DELIVER TUTORIAL", tutorial.steps.all())
+                                    if session.get("data").get("step_position") is None:
+                                        session["data"]["step_position"] = 1
+                                        cache.set(phone_number, session, 60*60*24)
+                                    print("Tutorials Position", session["data"].get("step_position"), len(tutorial.steps.all()))
+                                    steps = tutorial.steps.all().order_by("id")
+                                    if steps:
+                                        if session["data"]["step_position"] < len(steps):
+                                            print("Tutorials is select_tutorial", session["data"]["step_position"], len(steps))
+                                            step = steps[0]
+                                            if step.content_type == "text":
+                                                return {
+                                                    "is_valid": False,
+                                                    "data": user.first(),
+                                                    "requires_controls": False,
+                                                    "message": {
+                                                        "response_type": "tutorial",
+                                                        "text": f"*{step.title}*\n\n{step.instructions}",
+                                                    }
+                                                }
+                                            elif step.content_type == "image":
+                                                return {
+                                                    "is_valid": False,
+                                                    "data": user.first(),
+                                                    "requires_controls": True,
+                                                    "message": {
+                                                        "response_type": "image",
+                                                        "text": f"{step.instructions}",
+                                                        "image":  f"{step.file.url}" if step.file else None,
+                                                    }
+                                                }
+                                            elif step.content_type == "video":
+                                                return {
+                                                    "is_valid": False,
+                                                    "data": user.first(),
+                                                    "requires_controls": True,
+                                                    "message": {
+                                                        "response_type": "video",
+                                                        "text": f"{step.instructions}",
+                                                        "video": f"{step.file.url}" if step.file else None,
+                                                    }
+                                                }
+                                            
+                                            elif step.content_type == "audio":
+                                                return {
+                                                    "is_valid": False,
+                                                    "data": user.first(),
+                                                    "message": {
+                                                        "response_type": "audio",
+                                                        "text": f"{step.instructions}",
+                                                        "audio": f"{step.file.url}" if step.file else None,
+                                                    }
+                                                }
+                                            
+                                            # session["data"]["step_position"] += 1
+                                            cache.set(phone_number, session, 60*60*24)
+                                        else:
+                                            session['data']["tutorial_stage"] = "select_tutorial"
+                                            session['data']["step_position"] = None
+                                            cache.set(phone_number, session, 60*60*24)
+                                            return {
+                                                "is_valid": False,
+                                                "data": user.first(),
+                                                "message": {
+                                                    "response_type": "text",
+                                                    "text": "Congratulations! You have completed the tutorial.",
+                                                }
+                                            }
+                                    else:
+                                        session['data']["tutorial_stage"] = "select_tutorial"
+                                        session['data']["step_position"] = None
+                                        cache.set(phone_number, session, 60*60*24)
+                                        return {
+                                            "is_valid": False,
+                                            "data": user.first(),
+                                            "message": {
+                                                "response_type": "text",
+                                                "text": "Congratulations! You have completed the tutorial.",
+                                            }
+                                        }
+
+                                else:
+                                    session['data']["tutorial_stage"] = "select_tutorial"
+                                    cache.set(phone_number, session, 60*60*24)
+                                    return {
+                                        "is_valid": False,
+                                        "data": user.first(),
+                                        "message": {
+                                            "response_type": "text",
+                                            "text": "Invalid tutorial selected.",
+                                        }
+                                    }
+                        
+                            elif session['data'].get("tutorial_stage") == "ongoing_tutorial":
+                                if message == "tutorial_next":
+                                    tutorial = Tutorial.objects.filter(id=session['data'].get("selected_tutorial")).first()
+                                    if tutorial:
+                                        steps = tutorial.steps.all().order_by("id")
+                                        if steps:
+                                            if session["data"]["step_position"] < len(steps):
+                                                step = steps[session["data"]["step_position"]]
+                                                session["data"]["step_position"] += 1
+                                                cache.set(phone_number, session, 60*60*24)
+                                                if step.content_type == "text":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": False,
+                                                        "message": {
+                                                            "response_type": "tutorial",
+                                                            "text": f"*{step.title}*\n\n{step.instructions}",
+                                                        }
+                                                    }
+                                                elif step.content_type == "image":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": True,
+                                                        "message": {
+                                                            "response_type": "image",
+                                                            "text": f"*{step.title}*\n\n{step.instructions}",
+                                                            "image":  f"{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+                                                elif step.content_type == "video":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": True,
+                                                        "message": {
+                                                            "response_type": "video",
+                                                            "text": f"*{step.title}*\n\n{step.instructions}",
+                                                            "video": f"{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+                                                
+                                                elif step.content_type == "audio":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "message": {
+                                                            "response_type": "audio",
+                                                            "text": f"*{step.title}*\n\n{step.instructions}",
+                                                            "audio": f"{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+                                                else:
+                                                    session['data']["tutorial_stage"] = "select_tutorial"
+                                                    session['data']["step_position"] = None
+                                                    cache.set(phone_number, session, 60*60*24)
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "message": {
+                                                            "response_type": "text",
+                                                            "text": "Oops! Something went wrong.",
+                                                        }
+                                                    }
+                                            else:
+                                                session['data'].pop("tutorial_stage")
+                                                session['data'].pop("step_position")
+                                                session['data'].pop("selected_tutorial")
+
+                                                cache.set(phone_number, session, 60*60*24)
+                                                return {
+                                                    "is_valid": False,
+                                                    "data": user.first(),
+                                                    "message": {
+                                                        "exclude_back": True,
+                                                        "menu": "course_menu",
+                                                        "response_type": "button",
+                                                        "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.",
+                                                    }
+                                                }
+                                        else:
+                                            session['data'].pop("tutorial_stage")
+                                            session['data'].pop("step_position")
+                                            session['data'].pop("selected_tutorial")
+                                            cache.set(phone_number, session, 60*60*24)
+                                            return {
+                                                "is_valid": False,
+                                                "data": user.first(),
+
+                                                "message": {
+                                                    "menu": "course_menu",
+                                                    "response_type": "button",
+                                                    "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.",
+                                                }
+                                            }
+                                    else:
+                                        session['data']["tutorial_stage"] = "select_tutorial"
+                                        session['data']["step_position"] = None
+                                        cache.set(phone_number, session, 60*60*24)
+                                        return {
+                                            "is_valid": False,
+                                            "data": user.first(),
+                                            "message": {
+                                                "response_type": "text",
+                                                "text": "Invalid tutorial selected.",
+                                            }
+                                        }
+                               
+                        return {
+                            "is_valid": False,
+                            "data": user.first(),
+                            "message": {
+                                "exclude_back": True,
+                                "response_type": "button",
+                                "text": "Course Menu\n\nCourse Operations (Tutorials & Quizz) Implementation is in progress.\n\nComing soon, please try again later.",
+                            }
+                        }
 
     def profile(self, phone_number, message, session, payload=dict):
         """Profile menu"""
@@ -816,9 +1315,16 @@ class ActionValidator(object):
     def assignments(self, phone_number, message, session, payload=dict):
         """Assignment menu"""
         user = User.objects.get(phone_number=phone_number)
+
         #pylint: disable=maybe-no-member
-        pending_work = PendingWork.objects.filter(course__students__in=[user]).exclude(submitted_assignments__submitted_by=user).order_by("-created_at")
+        pending_work = PendingWork.objects.filter(
+            course__students__in=[user]
+            ).exclude(
+                submitted_assignments__submitted_by=user
+                ).order_by("-created_at")
+
         session = cache.get(f"{phone_number}_session", {"data": {}})
+        
         if message in [str(work.id) for work in pending_work]:
             session["data"]["assignment_id"] = message
             cache.set(f"{phone_number}_session", session)
@@ -831,6 +1337,7 @@ class ActionValidator(object):
                     "text": f"*{work.title} Details*\n\n*Course: _{work.course.name}_*\n*Deadline:* _{work.deadline.strftime('%d %b %Y %H:%M') if  work.deadline else 'No deadline'}_\n*Description:* _{work.description}_\n\n",
                 }
             }
+        
         elif message == "download":
             work = PendingWork.objects.get(id=session["data"]["assignment_id"])
             return {
@@ -843,6 +1350,7 @@ class ActionValidator(object):
                     "filename": work.file.name
                 }
             }
+        
         elif message == "upload":
             session["data"]["action"] = 'upload'
             cache.set(f"{phone_number}_session", session)
@@ -953,6 +1461,7 @@ class ActionValidator(object):
                     ]
                 }
             }
+        
         elif session["data"].get("action") == "get_help" and message == "outsource":
             session["data"]["action"] = "upload_type"
             cache.set(f"{phone_number}_session", session)
@@ -975,7 +1484,6 @@ class ActionValidator(object):
                 }
             }
             
-
         elif session["data"].get("action") == "upload_type" and message in ["math", "science", "language", "social", "ict", "other"]:
             session["data"]["action"] = 'receive_assignment'
             cache.set(f"{phone_number}_session", session)
@@ -1078,6 +1586,7 @@ class ActionValidator(object):
                     "text": "You have not been assigned any assignments yet. Please check back later.",
                 }
             }
+        
         elif session["data"].get("action") == "pending_payment" and message.startswith("payment_"):
             if message.split("_")[1] in [str(payment.id) for payment in Payment.objects.filter(user=user, payment_status="Awaiting Payment")]:
                session["data"]["action"] = "make_payment"
@@ -1124,6 +1633,7 @@ class ActionValidator(object):
                         ]
                     }
             }
+        
         elif session["data"].get("action") == "make_payment" and message == "paynow":
             session["data"]["action"] = "paynow_payment"
             cache.set(f"{phone_number}_session", session)
@@ -1143,6 +1653,7 @@ class ActionValidator(object):
                         ]
                     }
             }
+        
         elif session["data"].get("action") == "paypal_payment"  or session["data"].get("action") == "paynow_payment" and message.startswith("package_"):
             session["data"]["action"] = "confirm_payment"
             cache.set(f"{phone_number}_session", session)
@@ -1170,4 +1681,5 @@ class ActionValidator(object):
                 ]
             }
         }
+
 

@@ -4,10 +4,13 @@ from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 #pylint: disable=import-error
 #pylint: disable=no-name-in-module
 from utils.helper_functions import send_response
 from payments.models import Payment
+from payments.serializers import PaymentSerializer
+from users.permissions import IsStaff
 
 class PaymentsWebHook(APIView):
     """Payments Webhook"""
@@ -158,3 +161,30 @@ class PaymentsWebHook(APIView):
             }
         )    
         return JsonResponse({}, status=200)
+
+
+class PaymentViewSet(ModelViewSet):
+    """Payments"""
+
+    serializer_class = PaymentSerializer
+    #pylint: disable=no-member
+    queryset = Payment.objects.all()
+    permission_classes = [IsStaff, ]
+
+    def get_queryset(self):
+        """Get queryset"""
+        if self.request.user.is_staff:
+            return self.queryset
+        return self.queryset.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        """Create payment"""
+        # Create payment not allowed
+        return JsonResponse({}, status=405)
+
+
+    def destroy(self, request, *args, **kwargs):
+        """Delete payment"""
+        # Delete payment not allowed
+        return JsonResponse({}, status=405)
+

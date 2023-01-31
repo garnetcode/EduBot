@@ -8,4 +8,11 @@ class CourseSerializer(ModelSerializer):
     class Meta:
         """Meta definition for CourseSerializer."""
         model = Course
-        fields = "__all__"
+        fields = (
+            'id',
+            'name',
+            'description',
+            'duration',
+
+        )
+

@@ -15,7 +15,7 @@ class CloudAPIWebhook(APIView):
     def post(request):
         """POST request handler for the webhook."""
         payload = dict(request.data)
-        print("PAYLOAD >>>> ", payload)
+        # print("PAYLOAD >>>> ", payload)
         action_picker = ActionPickerService(payload=payload)
         action_picker.dispatch_action()
         return JsonResponse({"status": "success"}, status=status.HTTP_200_OK)

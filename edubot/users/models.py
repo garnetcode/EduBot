@@ -69,7 +69,7 @@ class User(AbstractUser):
         ("OTHER", "OTHER")
     ), default="OTHER"
     )
-    USERNAME_FIELD = 'phone_number'
+    USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
 
     objects = CustomUserManager()
@@ -80,6 +80,8 @@ class User(AbstractUser):
         verbose_name_plural = 'Users'
 
     def __str__(self):
+        """Unicode representation of User."""
+        #pylint: disable=no-member
         return f'{self.username if self.username else self.id}'
 
 

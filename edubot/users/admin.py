@@ -20,3 +20,6 @@ admin.site.index_title = f"{settings.PLATFORM_NAME} Admin"
 @admin.register(User)
 class UsersAdmin(BaseUserAdmin):
     """Users Admin"""
+    #pylint: disable = no-member
+    #pylint: disable = protected-access
+    list_display = [i.name for i in User._meta.fields]

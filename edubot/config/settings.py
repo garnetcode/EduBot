@@ -1,8 +1,10 @@
 """ Imports """
 # pylint: disable=no-name-in-module
 import os
+from datetime import timedelta
 from pathlib import Path
 from decouple import config
+
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,6 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=True, cast=bool)
 PLATFORM_NAME = config('PLATFORM_NAME')
+AUTH_USER_MODEL = 'users.User'
 NGROK=config('NGROK')
 
 ALLOWED_HOSTS = ["*"]
@@ -24,8 +27,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
+    "rest_framework_simplejwt",
     "rest_framework",
+    "rest_framework.authtoken",
     "corsheaders",
     "users.apps.UsersConfig",
     "subscriptions.apps.SubscriptionsConfig",
@@ -34,6 +38,7 @@ INSTALLED_APPS = [
     "payments.apps.PaymentsConfig",
     "packages.apps.PackagesConfig",
     "assignments.apps.AssignmentsConfig",
+    "tutorials.apps.TutorialsConfig",
 ]
 
 MIDDLEWARE = [
@@ -78,8 +83,48 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 1000,
+    # Token expiration time is 1 hour
+    'SIMPLE_JWT': {
+        "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+        "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    },
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': False,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(hours=2),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
 
