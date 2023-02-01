@@ -70,7 +70,7 @@ class User(AbstractUser):
     ), default="OTHER"
     )
     USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ['phone_number']
 
     objects = CustomUserManager()
 

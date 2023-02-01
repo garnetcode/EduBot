@@ -30,7 +30,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework",
     "rest_framework.authtoken",
-    "corsheaders",
     "users.apps.UsersConfig",
     "subscriptions.apps.SubscriptionsConfig",
     "courses.apps.CoursesConfig",
@@ -39,12 +38,15 @@ INSTALLED_APPS = [
     "packages.apps.PackagesConfig",
     "assignments.apps.AssignmentsConfig",
     "tutorials.apps.TutorialsConfig",
+
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -206,6 +208,16 @@ USE_L10N = True
 
 USE_TZ = True
 
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5000",
+    "http://localhost:8000",
+    "http://localhost:8004",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:8000",
+]
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Static files (CSS, JavaScript, Images)
 

@@ -59,6 +59,7 @@ class StaffSerializer(ModelSerializer):
             'phone_number': {'required': True},
             'role': {'required': True},
             'is_active': {'required': True},
+            'role': {'required': True},
         }
 
     

@@ -23,3 +23,4 @@ class UsersAdmin(BaseUserAdmin):
     #pylint: disable = no-member
     #pylint: disable = protected-access
     list_display = [i.name for i in User._meta.fields]
+    list_filter = ('is_active', 'is_staff', 'is_superuser', 'role')
