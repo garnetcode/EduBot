@@ -59,16 +59,19 @@ class StaffSerializer(ModelSerializer):
             'phone_number': {'required': True},
             'role': {'required': True},
             'is_active': {'required': True},
-            'role': {'required': True},
         }
 
     
     def validate(self, attrs):
         """Validate user data"""
         data = super().validate(attrs)
-        data['username'] = data.get('email')
-        data['is_staff'] = True
-        data['password'] = make_password(data.get("password"))
+        if data.get("email"):
+            if not User.objects.filter(username=data.get('email')).exists():
+                data['username'] = data.get('email') 
+        
+        if data.get('password'):
+                data['is_staff'] = True
+                data['password'] = make_password(data.get("password"))
         return data
 
     def to_representation(self, instance):
