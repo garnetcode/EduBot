@@ -443,7 +443,7 @@ class ActionValidator(object):
                             {
                                 "id": course.code,
                                 "name": course.name,
-                                "description": f"Course Code: {course.code}\nCourse Duration: {course.duration} week(s)",
+                                "description": f"{course.description[:45]}...",
                             } for course in courses[:10]
                         ]
                     }
@@ -470,7 +470,7 @@ class ActionValidator(object):
                     {
                         "id": course.code,
                         "name": course.name,
-                        "description": f"Course Code: {course.code}\nCourse Duration: {course.duration} week(s)",
+                        "description": f"{course.description[:45]}...",
                     } for course in courses
                 ]
             }
@@ -479,7 +479,7 @@ class ActionValidator(object):
             "data": user.first(),
             "message": {
                 "response_type": "button",
-                "text": "Oops! No courses available at the moment.  Please try again later."
+                "text": "*No Courses Available!!*\n\n No courses available at the moment.\nPlease contact tutor to upload courses.",
             }
         }
 
@@ -525,8 +525,8 @@ class ActionValidator(object):
                     "menu_items" :[
                         {
                             "id": course.code,
-                            "name": course.name,
-                            "description": f"Course Code: {course.code}\nCourse Duration: {course.duration} week(s)",
+                            "name": f"📚 {course.name}",
+                            "description": f"{course.description[:45]}...",
                         } for course in courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination]
                     ] + base
                 }
@@ -562,8 +562,8 @@ class ActionValidator(object):
                         "menu_items" :[
                             {
                                 "id": course.code,
-                                "name": course.name,
-                                "description": f"Course Code: {course.code}\nCourse Duration: {course.duration} week(s)",
+                                "name": f"📚 {course.name}",
+                                "description": f"{course.description[:45]}...",
                             } for course in courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination]
                         ]+ base
                     }
@@ -603,8 +603,8 @@ class ActionValidator(object):
                 menu_items =[
                     {
                         "id": course.code,
-                        "name": course.name,
-                        "description": f"Course Code: {course.code}\nCourse Duration: {course.duration} week(s)",
+                        "name": f"📚 {course.name}",
+                        "description": f"{course.description[:45]}...",
                     } for course in courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination]
                 ]
                 if base and menu_items and courses.count() > self.pagination:
@@ -665,7 +665,7 @@ class ActionValidator(object):
                                 },
                                 {
                                     "id": "request_call",
-                                    "name": "👨‍🏫📞 Request Call",
+                                    "name": "👨‍🏫📞 Schedule Call",
                                     "description": "Request a call from a tutor"
                                 },
                                 {
@@ -711,7 +711,7 @@ class ActionValidator(object):
                                 },
                                 {
                                     "id": "request_call",
-                                    "name": "👨‍🏫📞 Request Call",
+                                    "name": "👨‍🏫📞 Schedule Call",
                                     "description": "Request a call from a tutor"
                                 },
                                 {
@@ -765,8 +765,8 @@ class ActionValidator(object):
                             menu_items =[
                                 {
                                     "id": course.code,
-                                    "name": course.name,
-                                    "description": f"Course Code: {course.code}\nCourse Duration: {course.duration} week(s)",
+                                    "name": f"📚 {course.name}",
+                                    "description": f"{course.description[:45]}..."
                                 } for course in courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination]
                             ]
                             if base and menu_items and courses.count() > self.pagination:
@@ -948,7 +948,7 @@ class ActionValidator(object):
                                             "menu": "course_menu",
                                             "exclude_back": True,
                                             "response_type": "button",
-                                            "text": "No tutorials\n\n found for the selected course.",
+                                            "text": "*No tutorials yet!!*\n\nNo tutorials have been added to this course yet.\n\nPlease select another course or contact your tutor for more information.",
                                         }
                                     }
                             elif session['data'].get("tutorial_stage") == "select_tutorial":
@@ -958,28 +958,30 @@ class ActionValidator(object):
                                 session['data']["tutorial_identifier"] = message if uuid4.match(message) else session['data'].get("tutorial_identifier")
                                 print("Tutorials is select_tutorial >>>>>>>>>> ", session['data'].get("tutorial_identifier"))
                                 tutorial = Tutorial.objects.filter(id=session['data']["tutorial_identifier"])
+
                                 print("Tutorials is select_tutorial", tutorial)
                                 if tutorial:
                                     tutorial = tutorial.first()
                                     session['data']["tutorial_stage"] = "ongoing_tutorial"
                                     session['data']["selected_tutorial"] = message
                                     cache.set(phone_number, session, 60*60*24)
-                                    # deliver tutorial
-                                    print("DELIVER TUTORIAL", tutorial.steps.all())
                                     if session.get("data").get("step_position") is None:
                                         session["data"]["step_position"] = 1
+                                        is_first_step = True if session["data"]["step_position"] == 1 else False
+                                        
                                         cache.set(phone_number, session, 60*60*24)
-                                    print("Tutorials Position", session["data"].get("step_position"), len(tutorial.steps.all()))
                                     steps = tutorial.steps.all().order_by("id")
+                                    is_last_step = True if session["data"]["step_position"] > steps.count()-1 else False
                                     if steps:
                                         if session["data"]["step_position"] < len(steps):
-                                            print("Tutorials is select_tutorial", session["data"]["step_position"], len(steps))
                                             step = steps[0]
                                             if step.content_type == "text":
                                                 return {
                                                     "is_valid": False,
                                                     "data": user.first(),
                                                     "requires_controls": False,
+                                                    "is_first_step": is_first_step,
+                                                    "is_last_step": is_last_step,
                                                     "message": {
                                                         "response_type": "tutorial",
                                                         "text": f"*{step.title}*\n\n{step.instructions}",
@@ -990,6 +992,8 @@ class ActionValidator(object):
                                                     "is_valid": False,
                                                     "data": user.first(),
                                                     "requires_controls": True,
+                                                    "is_first_step": is_first_step,
+                                                    "is_last_step": is_last_step,
                                                     "message": {
                                                         "response_type": "image",
                                                         "text": f"{step.instructions}",
@@ -1001,6 +1005,8 @@ class ActionValidator(object):
                                                     "is_valid": False,
                                                     "data": user.first(),
                                                     "requires_controls": True,
+                                                    "is_first_step": is_first_step,
+                                                    "is_last_step": is_last_step,
                                                     "message": {
                                                         "response_type": "video",
                                                         "text": f"{step.instructions}",
@@ -1012,6 +1018,8 @@ class ActionValidator(object):
                                                 return {
                                                     "is_valid": False,
                                                     "data": user.first(),
+                                                    "is_first_step": is_first_step,
+                                                    "is_last_step": is_last_step,
                                                     "message": {
                                                         "response_type": "audio",
                                                         "text": f"{step.instructions}",
@@ -1030,7 +1038,7 @@ class ActionValidator(object):
                                                 "data": user.first(),
                                                 "message": {
                                                     "response_type": "text",
-                                                    "text": "Congratulations! You have completed the tutorial.",
+                                                    "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.\n\nYou can select another tutorial to continue learning or go to *Assessment* to test your knowledge.",
                                                 }
                                             }
                                     else:
@@ -1042,7 +1050,7 @@ class ActionValidator(object):
                                             "data": user.first(),
                                             "message": {
                                                 "response_type": "text",
-                                                "text": "Congratulations! You have completed the tutorial.",
+                                                "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.\n\nYou can select another tutorial to continue learning or go to *Assessment* to test your knowledge.",
                                             }
                                         }
 
@@ -1059,6 +1067,8 @@ class ActionValidator(object):
                                     }
                         
                             elif session['data'].get("tutorial_stage") == "ongoing_tutorial":
+                                is_first_step = False
+                                is_last_step =  False
                                 if message == "tutorial_next":
                                     tutorial = Tutorial.objects.filter(id=session['data'].get("selected_tutorial")).first()
                                     if tutorial:
@@ -1067,12 +1077,16 @@ class ActionValidator(object):
                                             if session["data"]["step_position"] < len(steps):
                                                 step = steps[session["data"]["step_position"]]
                                                 session["data"]["step_position"] += 1
+                                                is_first_step = True if session["data"]["step_position"] == 1 else False
+                                                is_last_step = True if session["data"]["step_position"] > steps.count()-1 else False
                                                 cache.set(phone_number, session, 60*60*24)
                                                 if step.content_type == "text":
                                                     return {
                                                         "is_valid": False,
                                                         "data": user.first(),
                                                         "requires_controls": False,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
                                                         "message": {
                                                             "response_type": "tutorial",
                                                             "text": f"*{step.title}*\n\n{step.instructions}",
@@ -1083,6 +1097,8 @@ class ActionValidator(object):
                                                         "is_valid": False,
                                                         "data": user.first(),
                                                         "requires_controls": True,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
                                                         "message": {
                                                             "response_type": "image",
                                                             "text": f"*{step.title}*\n\n{step.instructions}",
@@ -1094,6 +1110,8 @@ class ActionValidator(object):
                                                         "is_valid": False,
                                                         "data": user.first(),
                                                         "requires_controls": True,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
                                                         "message": {
                                                             "response_type": "video",
                                                             "text": f"*{step.title}*\n\n{step.instructions}",
@@ -1105,6 +1123,8 @@ class ActionValidator(object):
                                                     return {
                                                         "is_valid": False,
                                                         "data": user.first(),
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
                                                         "message": {
                                                             "response_type": "audio",
                                                             "text": f"*{step.title}*\n\n{step.instructions}",
@@ -1118,6 +1138,8 @@ class ActionValidator(object):
                                                     return {
                                                         "is_valid": False,
                                                         "data": user.first(),
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
                                                         "message": {
                                                             "response_type": "text",
                                                             "text": "Oops! Something went wrong.",
@@ -1132,11 +1154,13 @@ class ActionValidator(object):
                                                 return {
                                                     "is_valid": False,
                                                     "data": user.first(),
+                                                    "is_first_step": is_first_step,
+                                                    "is_last_step": is_last_step,
                                                     "message": {
                                                         "exclude_back": True,
                                                         "menu": "course_menu",
                                                         "response_type": "button",
-                                                        "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.",
+                                                        "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.\n\nYou can select another tutorial to continue learning or go to *Assessment* to test your knowledge.",
                                                     }
                                                 }
                                         else:
@@ -1147,11 +1171,12 @@ class ActionValidator(object):
                                             return {
                                                 "is_valid": False,
                                                 "data": user.first(),
-
+                                                "is_first_step": is_first_step,
+                                                "is_last_step": is_last_step,
                                                 "message": {
                                                     "menu": "course_menu",
                                                     "response_type": "button",
-                                                    "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.",
+                                                    "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.\n\nYou can select another tutorial to continue learning or go to *Assessment* to test your knowledge.",
                                                 }
                                             }
                                     else:
@@ -1161,12 +1186,108 @@ class ActionValidator(object):
                                         return {
                                             "is_valid": False,
                                             "data": user.first(),
+                                            "is_first_step": is_first_step,
+                                            "is_last_step": is_last_step,
                                             "message": {
                                                 "response_type": "text",
                                                 "text": "Invalid tutorial selected.",
                                             }
                                         }
-                               
+                                elif message == "tutorial_prev":
+                                    tutorial = Tutorial.objects.filter(id=session['data'].get("selected_tutorial")).first()
+                                    if tutorial:
+                                        steps = tutorial.steps.all().order_by("id")
+                                        if steps:
+                                            if session["data"]["step_position"] > 1:
+                                                step = steps[session["data"]["step_position"]-2]
+                                                
+                                                session["data"]["step_position"] -= 1
+                                                is_first_step = True if session["data"]["step_position"] == 1 else False
+                                                is_last_step = True if session["data"]["step_position"] > steps.count()-1 else False
+
+                                                cache.set(phone_number, session, 60*60*24)
+                                                if step.content_type == "text":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": False,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "tutorial",
+                                                            "text": f"*{step.title}*\n\n{step.instructions}",
+                                                        }
+                                                    }
+                                                elif step.content_type == "image":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": True,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "image",
+                                                            "text": f"*{step.title}*\n\n{step.instructions}",
+                                                            "image":  f"{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+                                                elif step.content_type == "video":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": True,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "video",
+                                                            "text": f"*{step.title}*\n\n{step.instructions}",
+                                                            "video": f"{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+                                                
+                                                elif step.content_type == "audio":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "audio",
+                                                            "text": f"*{step.title}*\n\n{step.instructions}",
+                                                            "audio": f"{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+                                                else:
+                                                    session['data']["tutorial_stage"] = "select_tutorial"
+                                                    session['data']["step_position"] = None
+                                                    cache.set(phone_number, session, 60*60*24)
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "text",
+                                                            "text": "Oops! Something went wrong.",
+                                                        }
+                                                    }
+                                            else:
+                                                session['data'].pop("tutorial_stage")
+                                                session['data'].pop("step_position")
+                                                session['data'].pop("selected_tutorial")
+                                                cache.set(phone_number, session, 60*60*24)
+                                                return {
+                                                    "is_valid": False,
+                                                    "data": user.first(),
+                                                    "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                    "message": {
+                                                        "exclude_back": True,
+                                                        "menu": "course_menu",
+                                                        "response_type": "button",
+                                                        "text": "🏁 The End\n\\nYou have reached the start of the tutorial. You cannot go back any further.",
+                                                    }
+                                                }
                         return {
                             "is_valid": False,
                             "data": user.first(),
@@ -1211,7 +1332,7 @@ class ActionValidator(object):
                 "menu_name": f"{imo} Profile",
                 "menu_items" :[
                     {"id": "deactivate", "name": "Deactivate Profile", "description": "Suspend your profile"},
-                    {"id": "menu", "name": "Main Menu", "description": "Back To Menu"},
+                    {"id": "menu", "name": "Main Menu", "description": "Menu"},
                 ]
             }
         }
@@ -1247,8 +1368,9 @@ class ActionValidator(object):
                 "username": f"{user.first().first_name} {user.first().last_name}",
                 "menu_name": "🆘 Help",
                 "menu_items" :[
-                    {"id": "guide", "name": "User guide", "description": "User guide"},
-                    {"id": "contact", "name": "Contact", "description": "Contact the developer"},
+                    {"id": "guide", "name": "📚 User guide", "description": "User guide"},
+                    {"id": "contact", "name": "👨‍💻 Contact", "description": "Contact the developer"},
+                    {"id": "menu", "name": "Main Menu", "description": "Back To Menu"},
                 ]
             }
         }
@@ -1456,7 +1578,7 @@ class ActionValidator(object):
                     "menu_name": "📝 Get Help",
                     "menu_items" :[
                         {"id": "outsource", "name": "📤 Upload Assignment", "description": "Upload your assignment"},
-                        {"id": "pending", "name": "📂 View Pending", "description": "View pending assignments"},
+                        {"id": "pending", "name": f"📂 View Pending ({pending_work.count()})", "description": "View pending assignments"},
                         {"id": "back", "name": "🔙 Back", "description": "Back to assignments menu"},
                     ]
                 }
@@ -1665,7 +1787,8 @@ class ActionValidator(object):
                     "response_type": "button",
                     "text": "TODO: \nThis is where the PayPal & PayNow payment implementations will be done.\n\nComing soon...",
                 }
-            }       
+            }      
+        
         return {
             "is_valid": False,
             "data": user,
@@ -1675,7 +1798,7 @@ class ActionValidator(object):
                 "username": f"{user.first_name} {user.last_name}",
                 "menu_name": "📝 Assignments",
                 "menu_items" :[
-                    {"id": "my_assignments", "name": "📚 Course Assignments", "description": "View your assignments"},
+                    {"id": "my_assignments", "name": f"📚 Course Assignments ({user.assignments.all().count()})", "description": "View your assignments"},
                     {"id": "get_help", "name": "📝 Outsourced Assignment", "description": "Get help with your assignments"},
                     {"id": "menu", "name": "🏠 Main Menu", "description": "Back to main menu"},
                 ]
@@ -1683,3 +1806,6 @@ class ActionValidator(object):
         }
 
 
+emojis = {
+    "developer": "👨‍💻",
+}

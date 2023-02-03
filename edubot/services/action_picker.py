@@ -287,6 +287,9 @@ class ActionPickerService(object):
             if response["body"].get('exclude_next'):
                 chat_response["interactive"]["action"]["buttons"][1]['reply']['id'] = "tutorial_finish"
                 chat_response["interactive"]["action"]["buttons"][1]['reply']['title'] = "🏁 Finish"
+           
+            
+
 
             chat_response["interactive"] = json.dumps(chat_response["interactive"])
             return chat_response
@@ -341,7 +344,6 @@ class ActionPickerService(object):
         if isinstance(state, list) and self.payload.get('body').lower() in state:
             print("State is a list")
             state = self.payload.get('body').lower()
-
         try:
             print("CALLING VALIDATOR :", self.action_table[state]['action_validator'])
             action = self.validator.registry[
@@ -356,7 +358,7 @@ class ActionPickerService(object):
             response = response = {
                 "phone_number": self.payload.get('phone_number'),
                 "body": {
-                    "text": "Sorry, I didn't understand that. That could be an invalid option.\n\n_Please try again._",
+                    "text": "*😕 Invalid Response*\n\nSorry I didn't understand that. That could be an invalid option.\n\n_Please try again._",
                     "response_type": "text",
                    
                 }
@@ -369,7 +371,7 @@ class ActionPickerService(object):
 
         if action.get("is_valid"):
             next_action = self.action_table[state]['next_action_if_valid']
-            response = {
+            bot_response = {
                 "phone_number": self.payload.get('phone_number'),
                 "body": action.get("message") if action.get("message") else \
                     self.action_table[state]['valid_response'],
@@ -377,14 +379,14 @@ class ActionPickerService(object):
             }
         else:
             next_action = self.action_table[state]['next_action_if_invalid']
-            response = {
+            bot_response = {
                 "phone_number": self.payload.get('phone_number'),
                 "body": action.get('message'),
                 "response_type": "text"
             }
 
         self.session = {
-            "state": next_action, 
+            "state": next_action,
             "data": cache.get(
                 self.payload.get('phone_number')
                 ).get('data') if cache.get(self.payload.get('phone_number')) else {}
@@ -393,7 +395,7 @@ class ActionPickerService(object):
         print("Next action :", next_action)
         self.save_session(self.session)
 
-        chatbot_response=self.construct_response(response)
+        chatbot_response=self.construct_response(bot_response)
 
         response = self.send_response(chatbot_response)
 
@@ -408,13 +410,13 @@ class ActionPickerService(object):
         self.history(history_payload)
         print("===================================================================================\n\n")
         if action.get('requires_controls') and response.status_code == 200:
-            time.sleep(1)
+            time.sleep(2)
             payload = {
                 "messaging_product": "whatsapp",
                 "recipient_type": "individual",
                 "to": self.payload.get('phone_number'),
                 "type": "interactive",
-                "interactive": json.dumps({
+                "interactive": {
                     "type": "button",
                     "body": {
                         "text": "_Use control panel for naviation._"
@@ -437,9 +439,18 @@ class ActionPickerService(object):
                             }
                         ]
                     }
-                })
+                }
             }
-            self.send_response(payload)
+            print("Sending controls", payload["interactive"]["action"]["buttons"])
+            if action.get('is_first_step'):
+                payload["interactive"]["action"]["buttons"].pop(0)
+            else:
+                if action.get('is_last_step'):
+                    payload["interactive"]["action"]["buttons"][1]['reply']['title'] = "🏁 Finish"
+            interactive = json.dumps(payload.pop("interactive"))
+            payload["interactive"] = interactive
+            print("Sending controls", payload)
+            print(self.send_response(payload).json())
         return
 
     def history(self, response):
