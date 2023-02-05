@@ -14,8 +14,10 @@ ENV PYTHONUNBUFFERED 1
 # Copy Project
 COPY . /app   
 
+
+
+
 EXPOSE 80
 
 # Set Work Directory
 WORKDIR /app
-

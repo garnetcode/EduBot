@@ -60,6 +60,14 @@ class Payment(models.Model):
     def __str__(self):
         """Unicode representation of Payment."""
         return f"{self.user} - {self.course}"
+    
+    def get_payment_type_display(self):
+        PAYMENT_TYPE_CHOICES = {
+            'Outsource': 'Not Specified',
+            '1': 'PayPal',
+            '2': 'PayNow',
+        }
+        return PAYMENT_TYPE_CHOICES[self.payment_type] if self.payment_type in PAYMENT_TYPE_CHOICES else self.payment_type
 
     class Meta:
         """Meta definition for Payment."""

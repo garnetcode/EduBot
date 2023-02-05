@@ -166,14 +166,15 @@ class ActionPickerService(object):
             }
 
         elif response["body"].get('response_type') == "document":
+            print("Constructing document response : ", response["body"].get('document'))
             return {
                 "messaging_product": "whatsapp",
                 "recipient_type": "individual",
                 "to": response.get('phone_number'),
                 "type": "document",
                 "document": json.dumps({
-                    "link": "https://bow-space.com/media/resources/RAND_RR4367.pdf",
-                    "caption": response["body"].get('caption'),
+                    "link": response["body"].get('document'),
+                    "caption": response["body"].get('text'),
                 })
             }
 
@@ -246,7 +247,7 @@ class ActionPickerService(object):
                 "to": response.get('phone_number'),
                 "type": "video",
                 "video": json.dumps({
-                    "link": "https://bow-space.com/media/files/quizz/WhatsApp_Video_2023-01-28_at_06.42.06.mp4",
+                    "link": response["body"].get('video'),
                     "caption": response["body"].get('text'),
                 })
             }
@@ -295,14 +296,27 @@ class ActionPickerService(object):
             return chat_response
 
         elif response["body"].get('response_type') == "image":
+            print("Constructing image response : ", response["body"].get('image'))
             return {
                 "messaging_product": "whatsapp",
                 "recipient_type": "individual",
                 "to": response.get('phone_number'),
                 "type": "image",
                 "image": json.dumps({
-                    "link": "https://bow-space.com/media/files/quizz/Screenshot_from_2023-01-29_09-13-50.png",
+                    "link": response["body"].get('image'),
                     "caption": response["body"].get('text'),
+                })
+            }
+        
+        elif response["body"].get('response_type') == "audio":
+            print("Constructing audio response : ", response["body"].get('audio'))
+            return {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": response.get('phone_number'),
+                "type": "audio",
+                "audio": json.dumps({
+                    "link": response["body"].get('audio'),
                 })
             }
 
@@ -354,7 +368,8 @@ class ActionPickerService(object):
                 session=self.session,
                 payload=self.payload
             )
-        except (TypeError, KeyError):
+        except (TypeError, KeyError) as e:
+            print("Invalid Response", e)
             response = response = {
                 "phone_number": self.payload.get('phone_number'),
                 "body": {
@@ -363,8 +378,9 @@ class ActionPickerService(object):
                    
                 }
             }
-
-            self.send_response(self.construct_response(response))
+            print("RESPONSE : >>>>>>>>>>>", response)
+            resp = self.send_response(self.construct_response(response))
+            print("RESPONSE : ", resp)
             return
 
         print("\n\nAction :")
@@ -399,7 +415,7 @@ class ActionPickerService(object):
 
         response = self.send_response(chatbot_response)
 
-        # print("MESSAGE SENT RECEIPT >>>>||  ", response.json())
+        print("MESSAGE SENT RECEIPT >>>>||  ", response.json())
 
         history_payload = {
             "state": state,
@@ -408,49 +424,63 @@ class ActionPickerService(object):
             "data": self.session.get('data', {}),
         }
         self.history(history_payload)
+        print("MESSAGE ID : ", response.json()['messages'][0]['id'], action)
         print("===================================================================================\n\n")
         if action.get('requires_controls') and response.status_code == 200:
-            time.sleep(2)
-            payload = {
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
-                "to": self.payload.get('phone_number'),
-                "type": "interactive",
-                "interactive": {
-                    "type": "button",
-                    "body": {
-                        "text": "_Use control panel for naviation._"
-                    },
-                    "action": {
-                        "buttons": [
-                            {
-                                "type": "reply",
-                                "reply": {
-                                    "id": "tutorial_prev",
-                                    "title": "🔙 Previous"
-                                }
-                            },
-                            {
-                                "type": "reply",
-                                "reply": {
-                                    "id": "tutorial_next",
-                                    "title": "🔜 Forward "
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-            print("Sending controls", payload["interactive"]["action"]["buttons"])
-            if action.get('is_first_step'):
-                payload["interactive"]["action"]["buttons"].pop(0)
-            else:
-                if action.get('is_last_step'):
-                    payload["interactive"]["action"]["buttons"][1]['reply']['title'] = "🏁 Finish"
-            interactive = json.dumps(payload.pop("interactive"))
-            payload["interactive"] = interactive
-            print("Sending controls", payload)
-            print(self.send_response(payload).json())
+            print("##############################################################################")
+            print(response.json())
+            cache.set(
+                f"{self.payload.get('phone_number')}_nav", 
+                {
+                    "id":f"{response.json()['messages'][0]['id']}",
+                    "is_last_step": action.get('is_last_step'),
+                    "is_first_step": action.get('is_first_step'),
+                    "caption": action["message"].get('text'),
+                    "response_type": action["message"].get('response_type'),
+                }, 
+                timeout=60*60*24*7  
+            )
+            print("Waiting for 2 seconds")
+            # payload = {
+            #     "messaging_product": "whatsapp",
+            #     "recipient_type": "individual",
+            #     "to": self.payload.get('phone_number'),
+            #     "type": "interactive",
+            #     "interactive": {
+            #         "type": "button",
+            #         "body": {
+            #             "text": "_Use control panel for naviation._"
+            #         },
+            #         "action": {
+            #             "buttons": [
+            #                 {
+            #                     "type": "reply",
+            #                     "reply": {
+            #                         "id": "tutorial_prev",
+            #                         "title": "🔙 Previous"
+            #                     }
+            #                 },
+            #                 {
+            #                     "type": "reply",
+            #                     "reply": {
+            #                         "id": "tutorial_next",
+            #                         "title": "🔜 Forward "
+            #                     }
+            #                 }
+            #             ]
+            #         }
+            #     }
+            # }
+            # print("Sending controls", payload["interactive"]["action"]["buttons"])
+            # if action.get('is_first_step'):
+            #     payload["interactive"]["action"]["buttons"].pop(0)
+            # else:
+            #     if action.get('is_last_step'):
+            #         payload["interactive"]["action"]["buttons"][1]['reply']['title'] = "🏁 Finish"
+            # interactive = json.dumps(payload.pop("interactive"))
+            # payload["interactive"] = interactive
+            # print("Sending controls", payload)
+            # print(self.send_response(payload).json())
         return
 
     def history(self, response):

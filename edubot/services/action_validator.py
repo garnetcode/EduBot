@@ -24,7 +24,7 @@ from utils.helper_functions import (
     is_phone_number,
     payment_method
 )
-
+HOST = config("HOST", default="http://localhost:8000")
 
 class ActionValidator(object):
     """Action validator for the edubot."""
@@ -960,75 +960,104 @@ class ActionValidator(object):
                                 tutorial = Tutorial.objects.filter(id=session['data']["tutorial_identifier"])
 
                                 print("Tutorials is select_tutorial", tutorial)
-                                if tutorial:
-                                    tutorial = tutorial.first()
-                                    session['data']["tutorial_stage"] = "ongoing_tutorial"
-                                    session['data']["selected_tutorial"] = message
-                                    cache.set(phone_number, session, 60*60*24)
-                                    if session.get("data").get("step_position") is None:
-                                        session["data"]["step_position"] = 1
-                                        is_first_step = True if session["data"]["step_position"] == 1 else False
-                                        
+                                try:
+                                    if tutorial:
+                                        tutorial = tutorial.first()
+                                        print("STEPS : ", tutorial.steps.all())
+                                        session['data']["tutorial_stage"] = "ongoing_tutorial"
+                                        session['data']["selected_tutorial"] = message
                                         cache.set(phone_number, session, 60*60*24)
-                                    steps = tutorial.steps.all().order_by("id")
-                                    is_last_step = True if session["data"]["step_position"] > steps.count()-1 else False
-                                    if steps:
-                                        if session["data"]["step_position"] < len(steps):
-                                            step = steps[0]
-                                            if step.content_type == "text":
-                                                return {
-                                                    "is_valid": False,
-                                                    "data": user.first(),
-                                                    "requires_controls": False,
-                                                    "is_first_step": is_first_step,
-                                                    "is_last_step": is_last_step,
-                                                    "message": {
-                                                        "response_type": "tutorial",
-                                                        "text": f"*{step.title}*\n\n{step.instructions}",
-                                                    }
-                                                }
-                                            elif step.content_type == "image":
-                                                return {
-                                                    "is_valid": False,
-                                                    "data": user.first(),
-                                                    "requires_controls": True,
-                                                    "is_first_step": is_first_step,
-                                                    "is_last_step": is_last_step,
-                                                    "message": {
-                                                        "response_type": "image",
-                                                        "text": f"{step.instructions}",
-                                                        "image":  f"{step.file.url}" if step.file else None,
-                                                    }
-                                                }
-                                            elif step.content_type == "video":
-                                                return {
-                                                    "is_valid": False,
-                                                    "data": user.first(),
-                                                    "requires_controls": True,
-                                                    "is_first_step": is_first_step,
-                                                    "is_last_step": is_last_step,
-                                                    "message": {
-                                                        "response_type": "video",
-                                                        "text": f"{step.instructions}",
-                                                        "video": f"{step.file.url}" if step.file else None,
-                                                    }
-                                                }
+                                        if session.get("data").get("step_position") is None:
+                                            session["data"]["step_position"] = 1
+                                            is_first_step = True 
                                             
-                                            elif step.content_type == "audio":
-                                                return {
-                                                    "is_valid": False,
-                                                    "data": user.first(),
-                                                    "is_first_step": is_first_step,
-                                                    "is_last_step": is_last_step,
-                                                    "message": {
-                                                        "response_type": "audio",
-                                                        "text": f"{step.instructions}",
-                                                        "audio": f"{step.file.url}" if step.file else None,
-                                                    }
-                                                }
-                                            
-                                            # session["data"]["step_position"] += 1
                                             cache.set(phone_number, session, 60*60*24)
+                                        steps = tutorial.steps.all().order_by("id")
+                                        is_last_step = False
+                                        if steps:
+                                            if session["data"]["step_position"] < len(steps):
+                                                step = steps[0]
+                                                if step.content_type == "text":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": True,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "tutorial",
+                                                            "text": f"*{step.title}*\n\n{step.instructions}",
+                                                        }
+                                                    }
+                                                elif step.content_type == "image":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls":  True,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "image",
+                                                            "text": f"{step.instructions}",
+                                                            "image":  f"{HOST}{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+                                                elif step.content_type == "video":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": True,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "video",
+                                                            "text": f"{step.instructions}",
+                                                            "video": f"{HOST}{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+                                                
+                                                elif step.content_type == "audio":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": True,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "audio",
+                                                            "text": f"{step.instructions}",
+                                                            "audio": f"{HOST}{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+                                                
+                                                elif step.content_type == "document":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": True,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "document",
+                                                            "text": f"{step.instructions}",
+                                                            "document": f"{HOST}{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+
+                                                # session["data"]["step_position"] += 1
+                                                cache.set(phone_number, session, 60*60*24)
+                                            else:
+                                                session['data']["tutorial_stage"] = "select_tutorial"
+                                                session['data']["step_position"] = None
+                                                cache.set(phone_number, session, 60*60*24)
+                                                return {
+                                                    "is_valid": False,
+                                                    "data": user.first(),
+                                                    "message": {
+                                                        "response_type": "text",
+                                                        "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.\n\nYou can select another tutorial to continue learning or go to *Assessment* to test your knowledge.",
+                                                    }
+                                                }
                                         else:
                                             session['data']["tutorial_stage"] = "select_tutorial"
                                             session['data']["step_position"] = None
@@ -1041,20 +1070,20 @@ class ActionValidator(object):
                                                     "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.\n\nYou can select another tutorial to continue learning or go to *Assessment* to test your knowledge.",
                                                 }
                                             }
+
                                     else:
                                         session['data']["tutorial_stage"] = "select_tutorial"
-                                        session['data']["step_position"] = None
                                         cache.set(phone_number, session, 60*60*24)
                                         return {
                                             "is_valid": False,
                                             "data": user.first(),
                                             "message": {
                                                 "response_type": "text",
-                                                "text": "🏁 The End\n\nCongratulations! You have reached the end of the tutorial.\n\nYou can select another tutorial to continue learning or go to *Assessment* to test your knowledge.",
+                                                "text": "Invalid tutorial selected.",
                                             }
                                         }
-
-                                else:
+                                except Exception as e:
+                                    print("Error in select_tutorial", e)
                                     session['data']["tutorial_stage"] = "select_tutorial"
                                     cache.set(phone_number, session, 60*60*24)
                                     return {
@@ -1062,10 +1091,9 @@ class ActionValidator(object):
                                         "data": user.first(),
                                         "message": {
                                             "response_type": "text",
-                                            "text": "Invalid tutorial selected.",
+                                            "text": f"Error in select_tutorial: {e}",
                                         }
                                     }
-                        
                             elif session['data'].get("tutorial_stage") == "ongoing_tutorial":
                                 is_first_step = False
                                 is_last_step =  False
@@ -1084,7 +1112,7 @@ class ActionValidator(object):
                                                     return {
                                                         "is_valid": False,
                                                         "data": user.first(),
-                                                        "requires_controls": False,
+                                                        "requires_controls": True,
                                                         "is_first_step": is_first_step,
                                                         "is_last_step": is_last_step,
                                                         "message": {
@@ -1102,7 +1130,7 @@ class ActionValidator(object):
                                                         "message": {
                                                             "response_type": "image",
                                                             "text": f"*{step.title}*\n\n{step.instructions}",
-                                                            "image":  f"{step.file.url}" if step.file else None,
+                                                            "image":  f"{HOST}{step.file.url}" if step.file else None,
                                                         }
                                                     }
                                                 elif step.content_type == "video":
@@ -1115,7 +1143,7 @@ class ActionValidator(object):
                                                         "message": {
                                                             "response_type": "video",
                                                             "text": f"*{step.title}*\n\n{step.instructions}",
-                                                            "video": f"{step.file.url}" if step.file else None,
+                                                            "video": f"{HOST}{step.file.url}" if step.file else None,
                                                         }
                                                     }
                                                 
@@ -1123,12 +1151,26 @@ class ActionValidator(object):
                                                     return {
                                                         "is_valid": False,
                                                         "data": user.first(),
+                                                        "requires_controls": True,
                                                         "is_first_step": is_first_step,
                                                         "is_last_step": is_last_step,
                                                         "message": {
                                                             "response_type": "audio",
                                                             "text": f"*{step.title}*\n\n{step.instructions}",
-                                                            "audio": f"{step.file.url}" if step.file else None,
+                                                            "audio": f"{HOST}{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+                                                elif step.content_type == "document":
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "requires_controls": True,
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "document",
+                                                            "text": f"{step.instructions}",
+                                                            "document": f"{HOST}{step.file.url}" if step.file else None,
                                                         }
                                                     }
                                                 else:
@@ -1228,7 +1270,7 @@ class ActionValidator(object):
                                                         "message": {
                                                             "response_type": "image",
                                                             "text": f"*{step.title}*\n\n{step.instructions}",
-                                                            "image":  f"{step.file.url}" if step.file else None,
+                                                            "image":  f"{HOST}{step.file.url}" if step.file else None,
                                                         }
                                                     }
                                                 elif step.content_type == "video":
@@ -1241,7 +1283,7 @@ class ActionValidator(object):
                                                         "message": {
                                                             "response_type": "video",
                                                             "text": f"*{step.title}*\n\n{step.instructions}",
-                                                            "video": f"{step.file.url}" if step.file else None,
+                                                            "video": f"{HOST}{step.file.url}" if step.file else None,
                                                         }
                                                     }
                                                 
@@ -1254,7 +1296,21 @@ class ActionValidator(object):
                                                         "message": {
                                                             "response_type": "audio",
                                                             "text": f"*{step.title}*\n\n{step.instructions}",
-                                                            "audio": f"{step.file.url}" if step.file else None,
+                                                            "audio": f"{HOST}{step.file.url}" if step.file else None,
+                                                        }
+                                                    }
+
+                                                elif step.content_type == "document":
+                                                    
+                                                    return {
+                                                        "is_valid": False,
+                                                        "data": user.first(),
+                                                        "is_first_step": is_first_step,
+                                                        "is_last_step": is_last_step,
+                                                        "message": {
+                                                            "response_type": "document",
+                                                            "text": f"{step.instructions}",
+                                                            "document": f"{HOST}{step.file.url}" if step.file else None,
                                                         }
                                                     }
                                                 else:
@@ -1467,8 +1523,8 @@ class ActionValidator(object):
                 "data": user,
                 "message": {
                     "response_type": "document",
-                    "caption": f"*{work.title} Details*\n\n*Course: _{work.course.name}_*\n*Deadline:* _{work.deadline.strftime('%d %b %Y %H:%M') if  work.deadline else 'No deadline'}_\n*Description:* _{work.description}_\n\n",
-                    "url": settings.NGROK + work.file.url,
+                    "text": f"*{work.title} Details*\n\n*Course: _{work.course.name}_*\n*Deadline:* _{work.deadline.strftime('%d %b %Y %H:%M') if  work.deadline else 'No deadline'}_\n*Description:* _{work.description}_\n\n",
+                    "document": settings.NGROK + work.file.url,
                     "filename": work.file.name
                 }
             }
@@ -1788,6 +1844,7 @@ class ActionValidator(object):
                     "text": "TODO: \nThis is where the PayPal & PayNow payment implementations will be done.\n\nComing soon...",
                 }
             }      
+
         
         return {
             "is_valid": False,
@@ -1798,7 +1855,7 @@ class ActionValidator(object):
                 "username": f"{user.first_name} {user.last_name}",
                 "menu_name": "📝 Assignments",
                 "menu_items" :[
-                    {"id": "my_assignments", "name": f"📚 Course Assignments ({user.assignments.all().count()})", "description": "View your assignments"},
+                    {"id": "my_assignments", "name": f"📚 Course Assignments", "description": "View your assignments"},
                     {"id": "get_help", "name": "📝 Outsourced Assignment", "description": "Get help with your assignments"},
                     {"id": "menu", "name": "🏠 Main Menu", "description": "Back to main menu"},
                 ]

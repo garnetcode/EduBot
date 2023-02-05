@@ -10,12 +10,15 @@ class TutorialSerializer(serializers.ModelSerializer):
     class Meta:
         """Meta class for the tutorial serializer."""
         model = Tutorial
-        fields = ('id', 'course', 'title', 'description', 'published', 'steps')
+        fields = ('id', 'course','course', 'title', 'description', 'published')
+    
+
 
     def to_representation(self, instance):
         """Override the to_representation method."""
         representation = super().to_representation(instance)
         representation['steps'] = StepSerializer(instance=instance.steps.all(), many=True).data
+        representation['course_name'] = instance.course.name
         return representation
     
     def create(self, validated_data):
@@ -28,22 +31,23 @@ class StepSerializer(serializers.ModelSerializer):
     class Meta:
         """Meta class for the lesson model"""
         model = Lesson
-        fields = "__all__"
+        fields = ['id', 'title', 'instructions', 'tutorial_class', 'content_type', 'file']
         extra_kwargs = {
             'title': {'required': True},
             'instructions': {'required': True},
             'tutorial_class': {'required': True},
             'content_type': {'required': True},
+            'file': {'required': False},
         }
     
 
     def validate(self, attrs):
         data =  super().validate(attrs)
-        if data.get('content_type') not in ['text'] and not data.get('file'):
-            raise serializers.ValidationError(
-                {"content":"This field is required",
-                "file":"This field is required"}
-            )
+        if data.get('content_type') in ['document', 'video', 'image', 'audio']:
+            if not data.get('file'):
+                raise serializers.ValidationError(
+                    {"file":"This field is required"}
+                )
 
         #pylint: disable=no-member
         if Lesson.lesson_exists(data.get('tutorial_class'), data.get('title')):
@@ -84,3 +88,11 @@ class CallRequestSerializer(serializers.ModelSerializer):
         """Override the create method."""
         validated_data['requested_by'] = self.context['user']
         return super().create(validated_data)
+    
+    def to_representation(self, instance):
+        """Override the to_representation method."""
+        representation = super().to_representation(instance)
+        representation['course_name'] = instance.course.name
+        representation['requested_by_name'] = f"{instance.requested_by.first_name} {instance.requested_by.last_name}"
+        representation['requested_by_phone'] = instance.requested_by.phone_number
+        return representation
