@@ -60,6 +60,7 @@ class Assignment(models.Model):
             ('In-House', 'In-House'),
         ), default='In-House'
     )
+    solution = models.FileField(upload_to="solutions", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(

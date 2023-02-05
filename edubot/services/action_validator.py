@@ -1542,6 +1542,7 @@ class ActionValidator(object):
             }
         
         elif session["data"].get("action") == "upload":
+            print("uploading >>>>>>>>>>>>>>>>>>>>>> ", payload)
             url_regex = re.compile(
                 r'^(?:http|ftp)s?://' # http:// or https://
                 r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
@@ -1550,28 +1551,39 @@ class ActionValidator(object):
                 r'(?::\d+)?' # optional port
                 r'(?:/?|[/?]\S+)$', re.IGNORECASE)
             if url_regex.match(message):
-                file = requests.get(url=message, headers={
-                                'Authorization': f"Bearer {config('CLOUD_API_TOKEN')}"})
+                file = requests.get(url=message, headers={'Authorization': f"Bearer {config('CLOUD_API_TOKEN')}"})
+                print("FILE: ", payload)
                 bytesio_o = BytesIO(file.content)
+                print("SIZE: ", f'{sys.getsizeof(bytesio_o)} kb')
+                print("TYPE: ", file.headers.get("content-type"))
+                print("NAME: ", payload.get("filename"))
+                filetype = file.headers.get("content-type")
+                print("FILENAME: ", filetype)
+
 
                 obj = InMemoryUploadedFile(
                     file=bytesio_o,
                     field_name='file',
-                    name=payload.get("filename"),
+                    name=payload['messages'][0]['document']['filename'],
                     content_type=file.headers.get("content-type"),
                     size=sys.getsizeof(bytesio_o),
                     charset="Unicode - UTF8"
                 )
+                print("OBJ: ", obj)
+
                 #pylint: disable=no-member
                 work = PendingWork.objects.get(id=session["data"]["assignment_id"])
-                asignment = Assignment.objects.create(
+                assignment = Assignment.objects.create(
                     title=f"{work.title} - {user.first_name} {user.last_name}",
                     file=obj,
                     status="Completed",
                     referenced_work=work,
                     submitted_by=user
                 )
-                work.submitted_assignments.add(asignment)
+                print(assignment, "<<============>>", obj)
+                work.submitted_assignments.add(assignment)
+                assignment.file = obj
+                assignment.save()
                 work.save()
                 session["data"]["action"] = None
                 cache.set(f"{phone_number}_session", session)
@@ -1691,7 +1703,7 @@ class ActionValidator(object):
                 obj = InMemoryUploadedFile(
                     file=bytesio_o,
                     field_name='file',
-                    name=payload.get("filename"),
+                    name=payload['messages'][0]['document']['filename'],
                     content_type=file.headers.get("content-type"),
                     size=sys.getsizeof(bytesio_o),
                     charset="Unicode - UTF8"

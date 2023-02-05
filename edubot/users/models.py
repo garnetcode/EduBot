@@ -84,8 +84,13 @@ class User(AbstractUser):
         #pylint: disable=no-member
         return f'{self.username if self.username else self.id}'
 
+    def get_full_name(self):
+        """Get full name of user"""
+        return f'{self.first_name} {self.last_name}'
+
 
     @classmethod
     def filter_by_phone_number(cls, phone):
         """Filter user by phone number"""
         return cls.objects.filter(phone_number=phone).first()
+

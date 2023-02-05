@@ -3,11 +3,11 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 #pylint: disable=no-name-in-module
-from material.views import MaterialViewset
+from assignments.views import AssignmentViewset
 
 router = DefaultRouter()
 
-router.register(r"", MaterialViewset, basename="material")
+router.register(r"", AssignmentViewset, basename="assignment")
 
 urlpatterns = [
     path("", include(router.urls)),

@@ -1,3 +1,53 @@
-from django.shortcuts import render
+"""Assignment Views"""
+from django.http import JsonResponse
+from rest_framework import viewsets
+from rest_framework.decorators import action
 
-# Create your views here.
+#pylint: disable=no-name-in-module
+from users.permissions import IsStaff
+
+#Local imports
+from assignments.serializers import AssignmentSerializer
+from assignments.models import Assignment
+
+class AssignmentViewset(viewsets.ModelViewSet):
+    """Assignment Viewset"""
+    #pylint: disable=no-member
+    queryset = Assignment.objects.all()
+    permission_classes = (IsStaff, )
+    serializer_class = AssignmentSerializer
+
+    def get_queryset(self):
+        """Override the get_queryset method."""
+        queryset = super().get_queryset()
+        if self.request.user.role == "TUTOR":
+            queryset = queryset.filter(course__instructors=self.request.user)
+        return queryset
+
+    def perform_create(self, serializer):
+        """Override the create method."""
+        serializer.save()
+        return super().perform_create(serializer)
+    
+    #get assignments by course
+    @action(detail=False, methods=['get'], url_path='fetch/(?P<course_id>[0-9a-f-]+)')
+    def fetch(self, request, course_id):
+        """Fetch an assignment by course and step."""
+        #pylint: disable=no-member
+        assignments = Assignment.objects.filter(referenced_work__course=course_id)
+        serializer = AssignmentSerializer(assignments, many=True)
+        data = {
+            "assignments": serializer.data
+        }
+        return JsonResponse(data, status=200)
+    
+    @action(detail=False, methods=['get'], url_path='fetch/outsourced')
+    def outsourced(self, request):
+        """Fetch an assignment by course and step."""
+        #pylint: disable=no-member
+        assignments = Assignment.objects.filter(assignment_type="Outsourced")
+        serializer = AssignmentSerializer(assignments, many=True)
+        data = {
+            "assignments": serializer.data
+        }
+        return JsonResponse(data, status=200)
