@@ -160,8 +160,7 @@ DATABASES = {
         'NAME': config('DATABASE_NAME'),
         'USER': config('DATABASE_USER'),
         'PASSWORD': config('DATABASE_PASSWORD'),
-        'HOST': 'localhost',
-        # 'HOST': 'db',
+        'HOST': config('DB_HOST'),
         'PORT': '5432',
     },
 }
@@ -169,8 +168,7 @@ DATABASES = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        # "LOCATION": "redis://redis/1",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": config('REDIS_URL'),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -229,11 +227,8 @@ STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 
 # Media files (User uploaded files) to be stored in the media folder in /var/www/media/
-# MEDIA_URL = '/media/'
-# MEDIA_ROOT = '/var/www/media/'
-
-MEDUA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/var/www/media/'
 
 
 
