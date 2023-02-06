@@ -96,3 +96,12 @@ class CallRequestSerializer(serializers.ModelSerializer):
         representation['requested_by_name'] = f"{instance.requested_by.first_name} {instance.requested_by.last_name}"
         representation['requested_by_phone'] = instance.requested_by.phone_number
         return representation
+
+class LessonSerializer(serializers.ModelSerializer):
+    """Serializer for the lesson model"""
+    class Meta:
+        """Meta class for the lesson model"""
+        model = Lesson
+        fields = '__all__'
+
+    

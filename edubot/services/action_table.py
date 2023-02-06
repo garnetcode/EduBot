@@ -1,4 +1,4 @@
-"""Action table for the edubot."""
+"""Action table for the Ngena."""
 
 
 ACTION_TABLE = {
@@ -8,7 +8,7 @@ ACTION_TABLE = {
         "valid_response":"Hie {name}, Welcome back",
         "invalid_response":{
             "response_type": "text",
-            "text":"Welcome to EduBot. Sign up to get started.\n\nWhat is your first name?"
+            "text":"Welcome to Ngena. Sign up to get started.\n\nWhat is your first name?"
         },
         "next_action_if_valid": "menu",
         "next_action_if_invalid": "register",

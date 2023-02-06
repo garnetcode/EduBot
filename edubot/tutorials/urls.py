@@ -7,6 +7,7 @@ from tutorials import views
 router = routers.DefaultRouter()
 router.register(r'tutorial', views.TutorialViewSet)
 router.register(r'requests', views.CallRequestViewSet)
+router.register(r'lessons', views.LessonViewSet)
 
 # define urls for tutorials app
 urlpatterns = [

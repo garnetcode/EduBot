@@ -13,11 +13,13 @@ import requests
 #pylint: disable=import-error
 from tutorials.models import (
     Tutorial,
+    Lesson,
     CallRequest
 )
 from tutorials.serializers import (
     TutorialSerializer,
     StepSerializer,
+    LessonSerializer,
     CallRequestSerializer
 )
 
@@ -83,7 +85,7 @@ class CallRequestViewSet(viewsets.ModelViewSet):
                 "interactive": json.dumps({
                     "type": "button",
                     "body": {
-                        "text": f"Your call request with agenda *{data.data['agenda']}* has been {data.data['status'].title()}\n\n{'Call Link : ' + data.data['call_link']}"
+                        "text": f"Your call request with agenda *{data.data['agenda']}* has been updated with status {data.data['status'].title()}\n\n{'Call Link : ' + data.data['call_link']}"
                     },
                     "action": {
                         "buttons": [
@@ -125,3 +127,14 @@ class CallRequestViewSet(viewsets.ModelViewSet):
         }
         return JsonResponse(response, status=200)
 
+
+class LessonViewSet(viewsets.ModelViewSet):
+    """Viewset for the Lesson model."""
+
+    #pylint: disable=no-member
+    queryset = Lesson.objects.all()
+    permission_classes = (IsStaff,)
+    renderer_classes = [JSONRenderer]
+    serializer_class = LessonSerializer
+
+    

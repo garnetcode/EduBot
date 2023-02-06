@@ -1,4 +1,4 @@
-"""Action validator for the edubot."""
+"""Action validator for the Ngena."""
 #pylint: disable=line-too-long
 # pylint: disable=import-error
 # pylint: disable=no-name-in-module
@@ -27,7 +27,7 @@ from utils.helper_functions import (
 HOST = config("HOST", default="http://localhost:8000")
 
 class ActionValidator(object):
-    """Action validator for the edubot."""
+    """Action validator for the Ngena."""
 
     def __init__(self):
         """Initialize the action validator."""
@@ -61,7 +61,7 @@ class ActionValidator(object):
                 "data": None,
                 "message": {
                     "response_type": "interactive",
-                    "username": "Welcome back to EduBot. What would you like to do?",
+                    "username": "Welcome back to Ngena. What would you like to do?",
                     "menu_name": "Main Menu",
                     "menu_items" :[
                         {"id": "enroll", "name": "📂 Enroll", "description": "Enroll in a course"},
@@ -83,7 +83,7 @@ class ActionValidator(object):
             "data": None,
             "message": {
                 "response_type": "text",
-                "text": "Welcome to *EduBot*. Let's sign you up to get started.\n\nWhat is your first name?"
+                "text": "Welcome to *Ngena*. Let's sign you up to get started.\n\nWhat is your first name?"
             }
         }       
 
@@ -116,7 +116,7 @@ class ActionValidator(object):
                     ]
                 }
             }
-        message = "Welcome to *EduBot*. Sign up to get started.\n\nWhat is your first name?"  if not user.exists() else ""
+        message = "Welcome to *Ngena*. Sign up to get started.\n\nWhat is your first name?"  if not user.exists() else ""
         return {
             "is_valid": user.exists(),
             "data": user.first() if user.exists() else None, 
@@ -211,7 +211,7 @@ class ActionValidator(object):
             print(message)
         else:
             serializer.save()
-            message = f"Welcome *{serializer.data.get('first_name')} {serializer.data.get('last_name')}* to *EduBot*.\n\nYou have successfully registered.You can now access the *EduBot* menu to get started."
+            message = f"Welcome *{serializer.data.get('first_name')} {serializer.data.get('last_name')}* to *Ngena*.\n\nYou have successfully registered.You can now access the *Ngena* menu to get started."
         return {
             "is_valid": is_valid,
             "data": serializer.data if is_valid else serializer.errors,
@@ -236,7 +236,7 @@ class ActionValidator(object):
                 "data": "User does not exist",
                 "message": {
                     "response_type": "text",
-                    "text":"You are not registered with EduBot.  Sign up to get started.\n\nWhat is your first name?"
+                    "text":"You are not registered with Ngena.  Sign up to get started.\n\nWhat is your first name?"
                 }
             }
         cache.set(phone_number, {
@@ -1403,7 +1403,7 @@ class ActionValidator(object):
                 "data": user.first(),
                 "message": {
                     "response_type": "button",
-                    "text": "EduBot is a chatbot that helps you to manage your courses and profile.\n\n1. Follow the instructions to register.\n2. Type *menu* to get started.\n3. Enroll in a course.\n4. Manage your profile.\n5. Enjoy Learning!\n\nAt any point, you can type *menu* to get back to your main menu.\n\n",
+                    "text": "Ngena is a chatbot that helps you to manage your courses and profile.\n\n1. Follow the instructions to register.\n2. Type *menu* to get started.\n3. Enroll in a course.\n4. Manage your profile.\n5. Enjoy Learning!\n\nAt any point, you can type *menu* to get back to your main menu.\n\n",
                 }
             }
         elif message == "contact":
@@ -1412,7 +1412,7 @@ class ActionValidator(object):
                 "data": user.first(),
                 "message": {
                     "response_type": "button",
-                    "text": "If you have any questions or feedback, please contact the developer at *+263771516726*\n\n Thank you for using EduBot!",
+                    "text": "If you have any questions or feedback, please contact the developer at *+263771516726*\n\n Thank you for using Ngena!",
                 }
             }
         return {
@@ -1441,7 +1441,7 @@ class ActionValidator(object):
             "message": {
                 "exclude_back": True,
                 "response_type": "button",
-                "text": "EduBot is a chatbot that helps \nyou to manage your courses \nand profile brought to you by \n*Empart*.\n\nFor more information, visit \n\n*[https://www.edubot.com]* \n\nor contact us on  \n\n*[https://wa.me/263771516726]*",
+                "text": "Ngena is a chatbot that helps \nyou to manage your courses \nand profile brought to you by \n*Empart*.\n\nFor more information, visit \n\n*[https://www.Ngena.com]* \n\nor contact us on  \n\n*[https://wa.me/263771516726]*",
             }
         }
 

@@ -7,7 +7,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from users.serializers import AuthTokenObtainPairSerializer, StaffSerializer
 
 
-from .models import User
+from users.models import User
+
 
 
 class AuthTokenObtainPairView(TokenObtainPairView):
@@ -25,3 +26,5 @@ class UserViewset(viewsets.ModelViewSet):
         if self.request.user.role == 'admin':
             return User.objects.all()
         return User.objects.filter(role='STUDENT')
+    
+    
