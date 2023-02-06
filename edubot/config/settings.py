@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "assignments.apps.AssignmentsConfig",
     "tutorials.apps.TutorialsConfig",
     "material.apps.MaterialConfig",
+    "quiz.apps.QuizConfig",
 
     "corsheaders",
 ]
@@ -228,7 +229,7 @@ STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Media files (User uploaded files) to be stored in the media folder in /var/www/media/
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/var/www/media/'
+MEDIA_ROOT = config('MEDIA_ROOT', default=BASE_DIR / 'media')
 
 
 

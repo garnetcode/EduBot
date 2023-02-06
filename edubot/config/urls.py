@@ -17,6 +17,7 @@ urlpatterns = [
     path("dashboard/payments/", include("payments.urls")),
     path("dashboard/material/", include("material.urls")),
     path("dashboard/assignments/", include("assignments.urls")),
+    path("dashboard/assessment/", include("quiz.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if settings.DEBUG:

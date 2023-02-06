@@ -6,14 +6,16 @@ from rest_framework.decorators import action
 
 #pylint: disable=no-name-in-module
 from users.permissions import IsStaff
+from users.models import User
 
 #Local imports
 from courses.serializers import CourseSerializer
 from courses.models import Course   
+
 from tutorials.models import CallRequest, Lesson, Tutorial
 from material.models import CourseMaterial
 from payments.models import Payment
-from users.models import User
+
 
 
 class CourseViewset(viewsets.ModelViewSet):
