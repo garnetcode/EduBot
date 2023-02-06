@@ -7,8 +7,8 @@ from rest_framework.decorators import action
 from users.permissions import IsStaff
 
 #Local imports
-from assignments.serializers import AssignmentSerializer
-from assignments.models import Assignment
+from assignments.serializers import AssignmentSerializer, PendingWorkSerializer
+from assignments.models import Assignment, PendingWork
 
 class AssignmentViewset(viewsets.ModelViewSet):
     """Assignment Viewset"""
@@ -49,5 +49,36 @@ class AssignmentViewset(viewsets.ModelViewSet):
         serializer = AssignmentSerializer(assignments, many=True)
         data = {
             "assignments": serializer.data
+        }
+        return JsonResponse(data, status=200)
+    
+class PendingWorkViewset(viewsets.ModelViewSet):
+    """Pending Work Viewset"""
+    #pylint: disable=no-member
+    queryset = PendingWork.objects.all()
+    permission_classes = (IsStaff, )
+    serializer_class = PendingWorkSerializer
+
+    def get_queryset(self):
+        """Override the get_queryset method."""
+        queryset = super().get_queryset()
+        if self.request.user.role == "TUTOR":
+            queryset = queryset.filter(course__instructors=self.request.user)
+        return queryset
+
+    def perform_create(self, serializer):
+        """Override the create method."""
+        serializer.save(uploaded_by=self.request.user)
+        return super().perform_create(serializer)
+    
+    #get pending work by course
+    @action(detail=False, methods=['get'], url_path='filter/(?P<course_id>[0-9a-f-]+)')
+    def filter(self, request, course_id):
+        """Fetch an assignment by course and step."""
+        #pylint: disable=no-member
+        pending_works = PendingWork.objects.filter(course=course_id)
+        serializer = PendingWorkSerializer(pending_works, many=True)
+        data = {
+            "pending_works": serializer.data
         }
         return JsonResponse(data, status=200)

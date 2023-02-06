@@ -424,7 +424,6 @@ class ActionPickerService(object):
             "data": self.session.get('data', {}),
         }
         self.history(history_payload)
-        print("MESSAGE ID : ", response.json()['messages'][0]['id'], action)
         print("===================================================================================\n\n")
         if action.get('requires_controls') and response.status_code == 200:
             print("##############################################################################")

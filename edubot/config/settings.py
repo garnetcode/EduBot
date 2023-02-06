@@ -229,8 +229,11 @@ STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 
 # Media files (User uploaded files) to be stored in the media folder in /var/www/media/
-MEDIA_URL = '/media/'
-MEDIA_ROOT = '/var/www/media/'
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = '/var/www/media/'
+
+MEDUA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 

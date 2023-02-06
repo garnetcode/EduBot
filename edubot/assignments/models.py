@@ -92,6 +92,10 @@ class Assignment(models.Model):
         related_name="assignments"
     )
 
+    grade = models.IntegerField(null=True, blank=True)
+
+    
+
     def __str__(self):
         """Unicode representation of Assignment."""
         return f"{self.title}"

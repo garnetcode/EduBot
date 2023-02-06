@@ -1,5 +1,7 @@
 """Material Views"""
+from django.http import JsonResponse
 from rest_framework import viewsets
+from rest_framework.decorators import action
 
 #pylint: disable=no-name-in-module
 from users.permissions import IsStaff
@@ -28,3 +30,15 @@ class MaterialViewset(viewsets.ModelViewSet):
         """Override the create method."""
         serializer.save()
         return super().perform_create(serializer)
+    
+    #get materials by course
+    @action(detail=False, methods=['get'], url_path='filter/(?P<course_id>[0-9a-f-]+)')
+    def filter(self, request, course_id):
+        """Fetch a material by course."""
+        #pylint: disable=no-member
+        materials = CourseMaterial.objects.filter(course=course_id)
+        serializer = MaterialSerializer(materials, many=True)
+        data = {
+            "materials": serializer.data
+        }
+        return JsonResponse(data, status=200)
