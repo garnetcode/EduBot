@@ -49,14 +49,14 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
     "corsheaders.middleware.CorsMiddleware",
+    'django.middleware.common.CommonMiddleware',
     "django.middleware.common.CommonMiddleware",
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'core.middleware.CustomMiddleware',
+    'config.middleware.CustomMiddleware',
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -215,21 +215,31 @@ USE_TZ = True
 CORS_ORIGIN_WHITELIST = (
     "http://localhost:3000",
     "http://localhost:5000",
-    "http://localhost:8000",
+    "http://localhost:8005",
     "http://localhost:8004",
+    "http://127.0.0.1:8005",
     "http://127.0.0.1:8000",
-    "http://127.0.0.1:8000",
+    "http://146.190.22.213:8004",
+    "http://146.190.22.213:8005"
 )
 
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5000",
-    "http://localhost:8000",
+    "http://localhost:8005",
     "http://localhost:8004",
+    "http://127.0.0.1:8005",
     "http://127.0.0.1:8000",
-    "http://127.0.0.1:8000",
+    "http://146.190.22.213:8004",
+    "http://146.190.22.213:8005"
 ]
+
+
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+
 
 
 # Static files (CSS, JavaScript, Images)
