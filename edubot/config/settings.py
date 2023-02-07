@@ -30,6 +30,8 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework",
     "rest_framework.authtoken",
+     "corsheaders",
+
     "users.apps.UsersConfig",
     "subscriptions.apps.SubscriptionsConfig",
     "courses.apps.CoursesConfig",
@@ -41,7 +43,7 @@ INSTALLED_APPS = [
     "material.apps.MaterialConfig",
     "quiz.apps.QuizConfig",
 
-    "corsheaders",
+   
 ]
 
 MIDDLEWARE = [
