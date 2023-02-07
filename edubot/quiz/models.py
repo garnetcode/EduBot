@@ -28,12 +28,28 @@ class Quiz(models.Model):
     def get_questions(self):
         """Returns all questions for a quiz."""
         #pylint: disable=no-member
-        return self.questions.all()
+        return self.questions.all().order_by('id')
 
     def get_results(self):
         """Returns all results for a quiz."""
         #pylint: disable=no-member
         return self.results.all()
+    
+    def answer_question(self, user, question, answer):
+        """Answers a question for a quiz."""
+        #pylint: disable=no-member
+        if self.questions.filter(id=question.id).exists():
+            if question.answer == answer.upper():
+                score = 1
+            else:
+                score = 0
+            result = Result.objects.get_or_create(quiz=self, user=user)[0]
+            result.score += score
+            result.save()
+            #pylint: disable=expression-not-assigned
+            self.results.add(result) if result not in self.results.all() else None
+            return result
+        return None
 
 class Question(models.Model):
     """Model definition for Question."""
@@ -59,7 +75,7 @@ class Result(models.Model):
     """Model definition for Result."""
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='quiz_results')
     user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='results')
-    score = models.IntegerField()
+    score = models.IntegerField(default=0)
     date_taken = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

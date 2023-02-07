@@ -59,8 +59,8 @@ class Navigation(APIView):
         print("NAVIGATION >>>> ", payload, cache.get(f"{payload.get('recipient_id')}_nav"))
         record = cache.get(f"{payload.get('recipient_id')}_nav")
         if record:
-            if payload.get('status') == "read":
-                print("READ >>>> ", record)
+            if payload.get('status') == "read" and record.get('type') in ["nav"]:
+                # print("READ >>>> ", record)
                 messages = {
                     "document": "Use buttons for navigation",
                     "audio": "Use buttons for navigation",
@@ -106,4 +106,38 @@ class Navigation(APIView):
                 response_data["interactive"] = interactive
                 send_response(response_data)
                 cache.delete(f"{payload.get('recipient_id')}_nav")
+            elif payload.get('status') == "read" and record.get('type') in ["quiz"]:
+                print("READ >>>> ", record)
+                response_data = {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": payload.get('recipient_id'),
+                    "type": "interactive",
+                    "interactive": json.dumps({
+                        "type": "list",
+                        "body": {
+                            "text": " Select the most appropriate answer "
+                        },
+                        "action": {
+                            "button": "Select Choices",
+                            "sections": [
+                                {
+                                    "title": "Select Choice",
+                                    "rows": [
+                                        {
+                                            "id": item,
+                                            "title": item,
+                                        } for item in ["A", "B", "C", "D"]
+                                    ]
+                                }
+                            ]
+                        }
+                    })
+                }
+                resp = send_response(response_data)
+                print("RESPONSE >>>> ", resp.json())
+                cache.delete(f"{payload.get('recipient_id')}_nav")
+
         return JsonResponse({"status": "success"}, status=status.HTTP_200_OK)
+
+                        

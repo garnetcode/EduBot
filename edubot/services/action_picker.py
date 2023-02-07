@@ -88,7 +88,7 @@ class ActionPickerService(object):
                                     {
                                         "id": item['id'],
                                         "title":  f"{item['name']}",
-                                        "description": f"{item['description']}",
+                                        
                                     } for item in response['body'].get('menu_items')
                                 ]
                             }
@@ -352,6 +352,7 @@ class ActionPickerService(object):
             phone_number=self.payload.get('phone_number')
             ).exists():
             cache.delete(self.payload.get('phone_number'))
+            cache.delete(f"{self.payload.get('phone_number')}_quiz_session")
             state = "greet"
 
         print("Current STATE : ", state)
@@ -434,8 +435,11 @@ class ActionPickerService(object):
                     "id":f"{response.json()['messages'][0]['id']}",
                     "is_last_step": action.get('is_last_step'),
                     "is_first_step": action.get('is_first_step'),
+                    "type": action.get('type') if action.get('type') else "nav",
                     "caption": action["message"].get('text'),
                     "response_type": action["message"].get('response_type'),
+                    "data": action["message"].get('choices') if action.get('type') == "quiz" else None,
+                    
                 }, 
                 timeout=60*60*24*7  
             )

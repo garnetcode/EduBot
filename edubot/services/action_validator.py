@@ -14,6 +14,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from decouple import config
 from courses.models import Course
 from assignments.models import Assignment, PendingWork
+from quiz.models import Quiz
 from tutorials.models import CallRequest, Tutorial
 from tutorials.serializers import CallRequestSerializer
 from payments.models import Payment
@@ -24,6 +25,7 @@ from utils.helper_functions import (
     is_phone_number,
     payment_method
 )
+from services.quiz import QuizService
 HOST = config("HOST", default="http://localhost:8000")
 
 class ActionValidator(object):
@@ -969,7 +971,7 @@ class ActionValidator(object):
                                         cache.set(phone_number, session, 60*60*24)
                                         if session.get("data").get("step_position") is None:
                                             session["data"]["step_position"] = 1
-                                            is_first_step = True 
+                                            is_first_step = True
                                             
                                             cache.set(phone_number, session, 60*60*24)
                                         steps = tutorial.steps.all().order_by("id")
@@ -1291,6 +1293,7 @@ class ActionValidator(object):
                                                     return {
                                                         "is_valid": False,
                                                         "data": user.first(),
+                                                        "requires_controls": True,
                                                         "is_first_step": is_first_step,
                                                         "is_last_step": is_last_step,
                                                         "message": {
@@ -1305,6 +1308,7 @@ class ActionValidator(object):
                                                     return {
                                                         "is_valid": False,
                                                         "data": user.first(),
+                                                        "requires_controls": True,
                                                         "is_first_step": is_first_step,
                                                         "is_last_step": is_last_step,
                                                         "message": {
@@ -1336,7 +1340,7 @@ class ActionValidator(object):
                                                     "is_valid": False,
                                                     "data": user.first(),
                                                     "is_first_step": is_first_step,
-                                                        "is_last_step": is_last_step,
+                                                    "is_last_step": is_last_step,
                                                     "message": {
                                                         "exclude_back": True,
                                                         "menu": "course_menu",
@@ -1344,6 +1348,134 @@ class ActionValidator(object):
                                                         "text": "🏁 The End\n\\nYou have reached the start of the tutorial. You cannot go back any further.",
                                                     }
                                                 }
+                        
+                        elif message =="course_assessment" or session["data"]["stage"] == "course_assessment":
+                            print("IN HEREEEEEEssss", session)
+                            all_quizzes = Quiz.objects.filter(course__code=session["data"]["selected_course"])
+                            if cache.get(f"{phone_number}_quiz_session"):
+                                quiz_session = cache.get(f"{phone_number}_quiz_session")
+                                sess= {
+                                    "phone_number": phone_number,
+                                    "selected_answer": message,
+                                    "quiz_id": quiz_session["quiz_id"],
+                                }
+
+                            else:
+                                sess = {
+                                    "phone_number": phone_number,
+                                    "selected_answer": message,
+                                }
+                            
+                            
+                            if message == "course_assessment" and sess.get("quiz_id") is None:
+                                session['data']['stage'] = "course_assessment"
+                                session['data']["action"] = "select_quiz"
+                                cache.set(phone_number, session, 60*60*24)
+                                all_quizzes = Quiz.objects.filter(course__code=session["data"]["selected_course"])
+                                base = []
+                                if all_quizzes.count() > 0:
+                                    if not session["data"].get("quiz_page"):
+                                        session["data"]["quiz_page"] = 1
+                                    if not session["data"].get("total_pages"):
+                                        session["data"]["total_pages"] = math.ceil(all_quizzes.count()/self.pagination)
+
+                                    if session["data"].get("quiz_page")  > config('PAGINATION_COUNT', cast=int):
+
+                                        base.append({
+                                            "id": "previous",
+                                            "name": "Previous",
+                                            "description": "Previous page"
+                                        })
+                                    if session["data"]["quiz_page"] < session["data"]["total_pages"]:
+                                        base.append({
+                                            "id": "next",
+                                            "name": "Next",
+                                            "description": "Next page"
+                                        })
+                                    menu_items =[
+                                        {
+                                            "id": f"quiz_{quiz.id}",
+                                            "name": f"{quiz.title}",
+                                            "description": f"{quiz.description[:45]}...",
+                                        } for quiz in all_quizzes[session["data"]["quiz_page"]*self.pagination-self.pagination:session["data"]["quiz_page"]*self.pagination]
+                                    ]
+                                    if base and menu_items and courses.count() > self.pagination:
+                                        menu_items.extend(base)
+                                    
+                                    return {
+                                        "is_valid": False,
+                                        "data": user.first(),
+                                        "message": {
+                                            "response_type": "interactive",
+                                            "text": f"Quiz (Page {session['data']['page']} of {session['data']['total_pages']}).",
+                                            "username": f"{user.first().first_name} {user.first().last_name}",
+                                            "menu_name": "📝 Quiz",
+                                            "menu_items" :menu_items
+                                        }
+                                    }
+                                else:return {
+                                        "is_valid": False,
+                                        "data": user.first(),
+                                        "message": {
+                                            "response_type": "button",
+                                            "text": "Oops! "
+                                        }
+                                    }
+                            elif session['data'].get('stage') == "course_assessment" and session['data'].get("action")== "select_quiz":
+                                if message in [f"quiz_{quiz.id}" for quiz in all_quizzes]:
+                                    session['data']["action"] = "quiz"
+                                    session['data']["quiz"] = message.split("_")[1]
+                                    quiz_session = {
+                                        "quiz_id": message.split("_")[1],
+                                        "phone_number": phone_number,
+                                        "selected_answer": message
+                                        
+                                    }
+                                    cache.set(f"{phone_number}_quiz_session", quiz_session, 60*60*24)
+                                    cache.set(phone_number, session, 60*60*24)
+                                    service = QuizService(quiz_session)
+                                    return service.deliver_quiz()
+                            elif message in ['A', 'B', 'C', 'D'] and session['data'].get("action") == "quiz":
+                                quiz_session = {
+                                    "quiz_id": session['data'].get("quiz"),
+                                    "phone_number": phone_number,
+                                    "selected_answer": message,
+                                    
+                                }
+                                service = QuizService(quiz_session)
+                                return service.deliver_quiz()
+                            
+                            print("WILDCARD : ", message, session['data'])
+                            return {
+                                "is_valid": False,
+                                "data": user.first(),
+                                "message": {
+                                    "response_type": "button",
+                                    "text": "Select Assessment",
+                                    "buttons": [
+                                        {
+                                            "text": "Assessment 1",
+                                            "value": "assessment_1"
+                                        },
+                                        {
+                                            "text": "Assessment 2",
+                                            "value": "assessment_2"
+                                        },
+                                        {
+                                            "text": "Assessment 3",
+                                            "value": "assessment_3"
+                                        },
+                                        {
+                                            "text": "Assessment 4",
+                                            "value": "assessment_4"
+                                        },
+                                        {
+                                            "text": "Assessment 5",
+                                            "value": "assessment_5"
+                                        },
+                                    ]
+                                }
+                            }
                         return {
                             "is_valid": False,
                             "data": user.first(),
@@ -1877,4 +2009,5 @@ class ActionValidator(object):
 
 emojis = {
     "developer": "👨‍💻",
+    "quiz": "📝",
 }
