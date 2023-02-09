@@ -15,7 +15,7 @@ class CourseMaterial(models.Model):
         )
     )
     # content is a file field with a custom upload_to path and maximum file size is 100MB
-    content = models.FileField(upload_to="materials/")
+    file = models.FileField(upload_to="materials/")
     course = models.ForeignKey(
         "courses.Course", related_name="materials", on_delete=models.CASCADE
     )

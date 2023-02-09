@@ -88,6 +88,8 @@ class ActionPickerService(object):
                                     {
                                         "id": item['id'],
                                         "title":  f"{item['name']}",
+                                        "description": f"{item['description'][:60]}...",
+
                                         
                                     } for item in response['body'].get('menu_items')
                                 ]

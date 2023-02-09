@@ -30,7 +30,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework",
     "rest_framework.authtoken",
-     "corsheaders",
 
     "users.apps.UsersConfig",
     "subscriptions.apps.SubscriptionsConfig",
@@ -42,16 +41,16 @@ INSTALLED_APPS = [
     "tutorials.apps.TutorialsConfig",
     "material.apps.MaterialConfig",
     "quiz.apps.QuizConfig",
+    "corsheaders",
 
    
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
-    "django.middleware.common.CommonMiddleware",
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -220,7 +219,8 @@ CORS_ORIGIN_WHITELIST = (
     "http://127.0.0.1:8005",
     "http://127.0.0.1:8000",
     "http://146.190.22.213:8004",
-    "http://146.190.22.213:8005"
+    "http://146.190.22.213:8005",
+    "http://147.182.189.221:82"
 )
 
 
@@ -232,14 +232,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8005",
     "http://127.0.0.1:8000",
     "http://146.190.22.213:8004",
-    "http://146.190.22.213:8005"
+    "http://146.190.22.213:8005",
+    "http://147.182.189.221:82"
 ]
 
 
 
 CORS_ORIGIN_ALLOW_ALL = True
-
-
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Static files (CSS, JavaScript, Images)

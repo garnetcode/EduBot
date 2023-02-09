@@ -1,5 +1,5 @@
 Django
-django-cors-headers
+django-cors-headers==3.10.1
 django-redis
 djangorestframework
 djangorestframework-simplejwt
