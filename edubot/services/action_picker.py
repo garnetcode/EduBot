@@ -349,7 +349,6 @@ class ActionPickerService(object):
         if "I have paid for the course and I want to join the class".lower() in self.payload.get('body').lower() or "I have paid for the assignment".lower() in self.payload.get('body').lower():
             state = "join_class"
             self.session['state'] = state
-
         if "Cancel payment".lower() in self.payload.get('body').lower():
             state = "cancel_payment"
             self.session['state'] = state

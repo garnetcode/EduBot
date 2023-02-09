@@ -2168,8 +2168,8 @@ class ActionValidator(object):
             paypal_payload['description'] = f"Assignment {assignment.id}"
             paypal_payload['amount'] = float(payment.amount)
 
-            paypal_payload["returnUrl"] = f"{settings.PAYPAL_RETURN_URL_ASSIGNMENT}"
-            paypal_payload["cancelUrl"] = f"{settings.PAYPAL_RETURN_URL_ASSIGNMENT}"
+            paypal_payload["returnUrl"] = f"{settings.PAYPAL_RETURN_URL}?payment_id={payment.id}"
+            paypal_payload["cancelUrl"] = f"{settings.PAYPAL_CANCEL_URL}?payment_id={payment.id}"
 
             payment_client = PAYPALCLIENTAPI(paypal_payload)
             payment_response = payment_client.online_payment()
