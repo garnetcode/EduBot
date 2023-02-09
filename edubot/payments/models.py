@@ -43,15 +43,19 @@ class Payment(models.Model):
     payment_status = models.CharField(
         max_length=255,
         choices= (
+            ('Created', 'Created'),
             ('Awaiting Delivery', 'Awaiting Delivery'),
             ('Paid', 'Paid'),
             ('Failed', 'Failed'),
             ('Cancelled', 'Cancelled'),
             ('Declined', 'Declined'),
 
+
         ), default='Failed'
     )
     reference = models.CharField(max_length=255, default=get_payment_reference)
+    upstream_reference = models.CharField(max_length=255, default="")
+    upstream_response = models.JSONField(default=dict)
     method = models.CharField(max_length=255, default="paypal")
     is_paid = models.BooleanField(default=False)
 

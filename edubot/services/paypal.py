@@ -5,6 +5,8 @@ import json
 import requests
 # Create your views here.
 from django.core.cache import cache
+from decouple import config
+
 
 def get_jwt_tokens(platform):
     """
@@ -38,11 +40,11 @@ class PAYPALCLIENTAPI:
     # PAYPAL_BASE_URL = settings.PAYPAL_BASE_URL
     access_token = get_jwt_tokens('paypal')
 
-    def __init__(self,payload = None):
+    def __init__(self, payload=None):
         self._headers = None
         self.payload = payload
-        self.client_id = "AUiFXuG_L4fI58jrQAZqDTTNJjeIPsN1ozmwiVxREO_jYKRY-BGYJWxTwLw4vdb0MtsWbiHhSQA6J036"
-        self.client_secret = "EADMsj2TcCG4sORZUmidFRPgF0J4KbIcJZMjYxAVelvdlXW0F93h_MHJ4XQKblLb4aHSc4z9PLFPZnv8"
+        self.client_id = config('PAYPAL_CLIENT_ID')
+        self.client_secret = config('PAYPAL_CLIENT_SECRET')
 
     @property
     def headers(self):
@@ -60,8 +62,10 @@ class PAYPALCLIENTAPI:
                 self.client_id,
                 self.client_secret
             )
-        self._headers = {'Authorization': f'Bearer {access_token}', 'Content-Type': 'application/json'}
-
+        else:
+            access_token = token
+        self._headers = {'Authorization': f'Bearer {access_token}',
+                         'Content-Type': 'application/json'}
 
     @staticmethod
     def login(client_id, client_secret):
@@ -69,12 +73,12 @@ class PAYPALCLIENTAPI:
         print('login in')
         auth_url = "https://api-m.sandbox.paypal.com/v1/oauth2/token?grant_type=client_credentials"
         headers = {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Authorization": f"Basic {base64.b64encode((client_id + ':' + client_secret).encode()).decode()}"
-                }
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": f"Basic {base64.b64encode((client_id + ':' + client_secret).encode()).decode()}"
+        }
         data = {
-                    "grant_type":"client_credentials"
-                }
+            "grant_type": "client_credentials"
+        }
         response = requests.post(auth_url, data, headers=headers)
         if response.status_code == 200:
             data = response.json()
@@ -87,46 +91,21 @@ class PAYPALCLIENTAPI:
             return access_token
         else:
             return ''
-    
-    def create_order(self, payload):
-        """Create an order"""
-        # amount to be paid to 2 decimal places
-        amount = f"{float(payload.get('amount'), 2)}"
-        payload = json.dumps(
 
-            {
-                "intent": "CAPTURE",
-                "purchase_units": [
-                    {
-                        "items": [
-                            {
-                                "name": payload.get('name').title(),
-                                "description": payload.get('description'),
-                                "quantity": "1",
-                                "unit_amount": {
-                                    "currency_code": "USD",
-                                    "value": amount
-                                }
-                            }
-                        ],
-                        "amount": {
-                            "currency_code": "USD",
-                            "value": amount,
-                            "breakdown": {
-                                "item_total": {
-                                    "currency_code": "USD",
-                                    "value": amount
-                                }
-                            }
-                        }
-                    }
-                ],
-                "application_context": {
-                    "return_url": payload.get('returnUrl'),
-                    "cancel_url": payload.get('cancelUrl'),
-                }
+    def capture(self, payment_id):
+        """Create an order"""
+        
+        post_url = f"https://api.sandbox.paypal.com/v2/checkout/orders/{payment_id}/capture"
+        self.headers = (PAYPALCLIENTAPI.access_token, False)
+        response = requests.post(post_url, headers=self.headers)
+        
+        if response.status_code in [200, 201]:
+            return response.json()
+        else:
+            return {
+                'error': response.content
             }
-        )
+
 
 
     def online_payment(self):
@@ -134,36 +113,41 @@ class PAYPALCLIENTAPI:
         print('making online payment')
         post_url = "https://api.sandbox.paypal.com/v2/checkout/orders"
         payload = json.dumps({
-                    "intent": "CAPTURE",
-                    "application_context": {
-                    "return_url": self.payload.get('returnUrl'),
-                    "cancel_url": self.payload.get('cancelUrl'),
-                    "brand_name": self.payload.get('brandName'),
-                    "landing_page": "BILLING",
-                    "user_action": "CONTINUE"
-                    },
-                    "purchase_units": [
-                        {
-                        "amount": {
-                            "currency_code": self.payload.get('currency'),
-                            "value": self.payload.get('amount')
-                            }
-                        }
-                    ]
-                    })
-        
+            "intent": "CAPTURE",
+            "application_context": {
+                "return_url": self.payload.get('returnUrl'),
+                "cancel_url": self.payload.get('cancelUrl'),
+                "brand_name": self.payload.get('brandName'),
+                "landing_page": "BILLING",
+                "user_action": "CONTINUE"
+            },
+            "purchase_units": [
+                {
+                    "amount": {
+                        "currency_code": self.payload.get('currency'),
+                        "value": self.payload.get('amount')
+                    }
+                }
+            ]
+        })
+        print('payload', payload)
+
         self.headers = (PAYPALCLIENTAPI.access_token, False)
         response = requests.post(post_url, data=payload, headers=self.headers)
+        print("PayPal Response : ", response.json())
 
         if response.status_code == 201:
+            response = response.json()
             response_json = {
-                'status': True,
-                'paypal_id':response.json().get('id'),
-                'url': response.json()['links'][1].get('href')
+                'successful': True,
+                'paypal_id': response.get('id'),
+                'status': "Created",
+                'url': response['links'][1].get('href'),
+                'response': response
             }
         else:
             response_json = {
-                'status': False,
-                'response':response.json()
+                'successful': False,
+                'response': response.json()
             }
         return response_json
