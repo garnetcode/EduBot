@@ -1668,6 +1668,58 @@ class ActionValidator(object):
             }
         }
 
+    def paginated_menu(self, user, message, section_objects, session, key, prefix=None):
+        """Paginated menu"""
+        print("PAGINATED INSTRUCTIONS MENU", section_objects)
+        total_records = section_objects.count()
+        if not session['data'].get(key):
+            session['data'][key] = {
+                "count": 0
+            }
+            cache.set(user.phone_number, session, 60*60*24)
+        else:
+            if message == 'next_page':
+                session['data'][key]['count'] += 1
+                session.save()
+            elif message == 'prev_page':
+                session['data'][key]['count'] -= 1
+                cache.set(user.phone_number, session, 60*60*24)
+
+        if total_records <= 10:
+            sections = [
+                {
+                    "id": f"{prefix}_{item.id}" if prefix else item.id,
+                    "title": item.title if item.title else '',
+                    "description": f"{item.description[:69] if item.description else ''}..."
+                } for item in section_objects
+            ]
+
+        else:
+
+            paginated_data = section_objects[session['data'][key]
+                                             ['count'] * 8:session['data'][key]['count'] * 8 + 8]
+            print("PAGINATED DATA", paginated_data)
+            sections = [
+                {
+                    "id": f"{prefix}_{item.id}" if prefix else item.id,
+                    "title": item.title,
+                    "description": f"{item.description[:69] if item.description else ''}..."
+                } for item in paginated_data
+            ]
+
+            if session['data'][key]['count'] > 0:
+                sections.append({
+                    "id": "prev_page",
+                    "title": "Previous Page",
+                })
+
+            if session['data'][key]['count'] < total_records // 8:
+                sections.append({
+                    "id": "next_page",
+                    "title": "Next Page",
+                })
+        return sections
+
     def about(self, phone_number, message, session, payload=dict):
         """About menu"""
         user = User.objects.filter(phone_number=phone_number)
@@ -1875,6 +1927,8 @@ class ActionValidator(object):
         elif message == "get_help":
             session["data"]["action"] = message
             cache.set(f"{phone_number}_session", session)
+            pending = Assignment.objects.filter(
+                submitted_by=user, status="Pending", assignment_type="Outsourced")
             return {
                 "is_valid": False,
                 "data": user,
@@ -1887,7 +1941,7 @@ class ActionValidator(object):
                         {"id": "outsource", "name": "📤 Upload Assignment",
                             "description": "Upload your assignment"},
                         {"id": "pending",
-                            "name": f"📂 View Pending ({pending_work.count()})", "description": "View pending assignments"},
+                            "name": f"📂 View Pending ({pending.count()})", "description": "View pending assignments"},
                         {"id": "back", "name": "🔙 Back",
                             "description": "Back to assignments menu"},
                     ]
@@ -1895,7 +1949,7 @@ class ActionValidator(object):
             }
 
         elif session["data"].get("action") == "get_help" and message == "outsource":
-            session["data"]["action"] = "upload_type"
+            session["data"]["action"] = "assignment_name"
             cache.set(f"{phone_number}_session", session, timeout=60*60*24)
             return {
                 "is_valid": False,
@@ -1905,21 +1959,36 @@ class ActionValidator(object):
                     "text": "Please select the type of assignment you are submitting.",
                     "menu_name": "Assignment Type",
                     "menu_items": [
-                        {"id": "math", "name": "Math", "description": "Math"},
-                        {"id": "science", "name": "Science",
+                        {"id": "math", "name": "Math Assignment",
+                            "description": "Math"},
+                        {"id": "science", "name": "Science Assignment",
                             "description": "Science"},
-                        {"id": "language", "name": "Language",
+                        {"id": "language", "name": "Language Assignment",
                             "description": "Language"},
-                        {"id": "social", "name": "Social", "description": "Social"},
-                        {"id": "ict", "name": "ICT", "description": "ICT"},
+                        {"id": "social", "name": "Social Assignment",
+                            "description": "Social"},
+                        {"id": "ict", "name": "ICT Assignment", "description": "ICT"},
                         {"id": "other", "name": "Other", "description": "Other"},
                     ]
 
                 }
             }
+        elif session["data"].get("action") == "assignment_name" and message in ["math", "science", "language", "social", "ict", "other"]:
+            session["data"]["action"] = "upload_type"
+            session["data"]["field"] = message
+            cache.set(f"{phone_number}_session", session)
+            return {
+                "is_valid": False,
+                "data": user,
+                "message": {
+                    "response_type": "text",
+                    "text": "Please enter a reference name of the assignment you are submitting."
+                }
+            }
 
-        elif session["data"].get("action") == "upload_type" and message in ["math", "science", "language", "social", "ict", "other"]:
+        elif session["data"].get("action") == "upload_type":
             session["data"]["action"] = 'receive_assignment'
+            session["data"]["assignment_name"] = message
             cache.set(f"{phone_number}_session", session)
             return {
                 "is_valid": False,
@@ -1956,6 +2025,8 @@ class ActionValidator(object):
                     charset="Unicode - UTF8"
                 )
                 assignment = Assignment.objects.create(
+                    title=session["data"]["assignment_name"],
+                    field_of_study=session["data"]["field"],
                     assignment_type="Outsourced",
                     status="Pending",
                     submitted_by=user,
@@ -1981,7 +2052,7 @@ class ActionValidator(object):
                         "exclude_download": True,
                         "response_type": "pay_download",
                         "id": payment.id,
-                        "text": f"We have received your assignment referenced as Assignment {assignment.id}.\n\nPlease note that you will be charged a fee for this service. Complete the payment process so we can start working on it.\n\nThank you for using our service.",
+                        "text": f"We have received your assignment referenced {assignment.title.title()}.\n\nPlease note that you will be charged a fee for this service. Complete the payment process so we can start working on it.\n\nThank you for using our service.",
                     }
                 }
             else:
@@ -1995,24 +2066,28 @@ class ActionValidator(object):
                 }
 
         elif session["data"].get("action") == "get_help" and message == "pending":
-            session["data"]["action"] = "pending_payment"
-            cache.set(f"{phone_number}_session", session)
+            session["data"]["action"] = "view_pending"
+            cache.set(f"{phone_number}_session", session, timeout=60*60*24)
             pending_work = Assignment.objects.filter(
-                assignment_type="Outsourced").order_by("-created_at")[:7]
+                assignment_type="Outsourced").order_by("-created_at")
+            print("===>>>>>>>>", pending_work)
             if pending_work:
-                session["data"]["action"] = "pending_payment"
-                cache.set(f"{phone_number}_session", session)
+                session["data"]["action"] = "view_pending"
+                cache.set(f"{phone_number}_session", session, timeout=60*60*24)
+                section_objects = pending_work.exclude(status="Completed")
+                key = "outsourced"
+                menu_items = self.paginated_menu(
+                    user, message, section_objects, session, key, prefix="outsourced")
                 return {
                     "is_valid": False,
                     "data": user,
+
                     "message": {
-                        "response_type": "interactive",
+                        "response_type": "paginated_interactive",
                         "text": "*Pending Assignments*\n\n",
                         "username": f"{user.first_name} {user.last_name}",
                         "menu_name": "📝 Pending",
-                        "menu_items": [
-                            {"id": f"payment_{work.payment.id}", "name": f"Assignment {work.id}", "description": f"Status :{work.status}"} for work in pending_work if work.payment.payment_status == "Awaiting Payment"
-                        ]
+                        "menu_items": menu_items
 
                     }
                 }
@@ -2021,14 +2096,81 @@ class ActionValidator(object):
                 "data": user,
                 "message": {
                     "response_type": "button",
-                    "text": "You have not been assigned any assignments yet. Please check back later.",
+                    "text": "You have not uploaded any assignments yet. Please upload an assignment to get started.",
                 }
             }
+        elif session["data"].get("action") == "view_pending" and message.startswith("outsourced_"):
+            session["data"]["action"] = "download_outsourced"
+            cache.set(f"{phone_number}_session", session, timeout=60*60*24)
+
+            assignment = Assignment.objects.get(id=message.split("_")[1])
+            if assignment.status == "Pending" and assignment.payment.payment_status != "Paid":
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "text",
+                        "text": f"Assignment {assignment.id} is still pending. Please complete the payment process to get started."
+                    }
+                }
+
+            elif assignment.status == "Completed":
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "download_outsourced",
+                        "text": f"Assignment {assignment.id} has been completed. Please download the file below.",
+                        "download_solution": assignment.id
+                    }
+                }
+            elif assignment.status == "In Progress":
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "download_outsourced",
+                        "text": f"Assignment {assignment.id} is currently being worked on. Please wait for a response from our team."
+                    }
+                }
+            elif assignment.status == "Revision":
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "download_outsourced",
+                        "text": f"Assignment {assignment.id} is currently being revised. Please wait for a response from our team."
+                    }
+                }
+            else:
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "download_outsourced",
+                        "text": f"Assignment {assignment.id} is currently being worked on. Please wait for a response from our team."
+                    }
+                }
+
+        elif session["data"].get("action") == "download_outsourced" and message.startswith("download_outsourced_"):
+            assignment = Assignment.objects.filter(
+                id=message.split("_")[1]).first()
+            if assignment.status == "Completed":
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "document",
+                        "text": f"Assignment {assignment.title.title()} has been completed. Please click on the file to download your solution. \n\nThank you for using our service.",
+                        "document": assignment.solution.url
+                    }
+                }
 
         elif session["data"].get("action") == "pending_payment" and message.startswith("payment_"):
             if message.split("_")[1] in [str(payment.id) for payment in Payment.objects.filter(user=user, payment_status="Awaiting Payment")]:
                 session["data"]["action"] = "pending_payment"
-                cache.set(f"{phone_number}_payment", message.split("_")[1], timeout=60*60*24)
+                cache.set(f"{phone_number}_payment",
+                          message.split("_")[1], timeout=60*60*24)
                 cache.set(f"{phone_number}", session, timeout=60*60*24)
                 print("Saving session : ", session['data'])
                 return {
@@ -2054,7 +2196,8 @@ class ActionValidator(object):
             print("Saving session : ", session['data'])
             session["data"]["action"] = "assignment_payment"
             session["data"]["selected_package"] = message.split("_")[1]
-            payment = Payment.objects.get(id=cache.get(f"{phone_number}_payment"))
+            payment = Payment.objects.get(
+                id=cache.get(f"{phone_number}_payment"))
             package = Package.objects.get(id=message.split("_")[1])
             payment.amount = package.price
             payment.package = package
@@ -2160,7 +2303,8 @@ class ActionValidator(object):
         elif session["data"].get("action") == "assignment_payment" and message == "handle_payment":
             # pylint: disable=no-member
             payment_id = session["data"].get("payment_id")
-            package = Package.objects.get(id=session["data"].get("selected_package"))
+            package = Package.objects.get(
+                id=session["data"].get("selected_package"))
             payment = Payment.objects.get(id=payment_id)
             payment.package = package
             assignment = Assignment.objects.get(payment=payment)

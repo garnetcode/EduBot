@@ -197,14 +197,19 @@ class PayPalWebhookView(APIView):
     def post(self, request, *args, **kwargs):
         """Handle webhook"""
         print("PAYPAL WEBHOOK :: ", request.data)
+        payload = request.data
+
         try:
-            if request.data["event_type"] == "CHECKOUT.ORDER.APPROVED":
-                reference = request.data["resource"]["id"]
+            if payload["event_type"] == "CHECKOUT.ORDER.APPROVED":
+                reference = payload["resource"]["id"]
                 print("############################Reference :: ", reference)
                 # pylint: disable=no-member
-                payment = Payment.objects.get(upstream_reference=reference)
+                payment = Payment.objects.filter(upstream_reference=reference).first()
                 paypal_client = PAYPALCLIENTAPI()
                 payment_payload = paypal_client.capture(reference)
+                if not payment:
+                    return JsonResponse({}, status=200)
+
                 if not payment_payload.get('error'):
 
                     if payment_payload['status'] == 'COMPLETED':
@@ -254,6 +259,11 @@ class PayPalWebhookView(APIView):
                         print('Payment not completed')
                         print(payment_payload)
         except Exception:
+            reference = payload["resource"]["id"]
+            print("############################Reference :: ", reference)
+            # pylint: disable=no-member
+            payment = Payment.objects.filter(
+                upstream_reference=reference).first()
             print("PAYPAL WEBHOOK ERROR :: ", request.data)
             receipt = {
                 "messaging_product": "whatsapp",

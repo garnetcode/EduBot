@@ -9,7 +9,7 @@ from payments.views import PaymentsWebHook, PayPalWebhookView
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("webhook/", PaymentsWebHook.as_view(), name="webhook"),
-    path("paypal/webhook", PayPalWebhookView.as_view(), name="paypal_webhook"),
+    path("paypal/webhook/", PayPalWebhookView.as_view(), name="paypal_webhook"),
     path("api/", include("api.urls")),
     path("user/", include("users.urls")),
     path("dashboard/class/", include("tutorials.urls")),

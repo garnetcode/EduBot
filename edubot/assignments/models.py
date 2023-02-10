@@ -53,6 +53,9 @@ class Assignment(models.Model):
     title = models.CharField(max_length=255, null=False, blank=False)
     description = models.TextField()
     file = models.FileField(upload_to="assignments")
+    field_of_study = models.CharField(
+        max_length=255, default="Other"
+    )
     assignment_type = models.CharField(
         max_length=255,
         choices= (

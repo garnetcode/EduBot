@@ -98,6 +98,30 @@ class ActionPickerService(object):
                     }
                 })
             }
+        
+        if response["body"].get('response_type') == "paginated_interactive":
+            print("Constructing interactive response : ")
+            return {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": response.get('phone_number'),
+                "type": "interactive",
+                "interactive": json.dumps({
+                    "type": "list",
+                    "body": {
+                        "text": f"{response['body'].get('text')}"
+                    },
+                    "action": {
+                        "button": f"{response['body'].get('menu_name')}",
+                        "sections": [
+                            {
+                                "title": "Select Option",
+                                "rows": response['body'].get('menu_items')
+                            }
+                        ]
+                    }
+                })
+            }
 
         elif response["body"].get('response_type') == "button":
             chat_response = {
@@ -240,6 +264,41 @@ class ActionPickerService(object):
                                 "messenger_extensions": True,
                             }
                         ]
+                    }
+                })
+            }
+        
+        elif response["body"].get('response_type') == "download_outsourced":
+            buttons = [
+                {
+                    "type": "reply",
+                    "reply": {
+                        "id": "back",
+                        "title": "🔙 Back"
+                    }
+                },
+            ]
+            if response["body"].get('download_solution') is not None:
+                buttons.append({
+                    "type": "reply",
+                    "reply": {
+                        "id": f"download_solution_{response['body'].get('download')}",
+                        "title": "📥 Download"
+
+                    }
+                })
+            return {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": response.get('phone_number'),
+                "type": "interactive",
+                "interactive": json.dumps({
+                    "type": "button",
+                    "body": {
+                        "text": f"{response['body'].get('text')}"
+                    },
+                    "action": {
+                        "buttons": buttons
                     }
                 })
             }
