@@ -220,17 +220,41 @@ class PayPalWebhookView(APIView):
                             payment.user.enrolled_courses.add(payment.course)
                             payment.course.students.add(payment.user)
                             payment.payment_status = 'Paid'
+                            payment.is_paid = True
                             payment.user.save()
                             payment.course.save()
                             payment.save()
                             receipt_like_template = f"""
-                                *EduBot ✅*\n\nThank you for subscribing to {payment.package.name.title()} package for *{payment.course.name}*.\n\nYour payment of *$ {payment.package.price}* has been received.If you have any questions regarding your payment, please contact us at \n\n*[admin@edubot.com]* \n\nor call \n\n*[263771516726]*
-                            """
+
+*Ngena ✅*\n\n
+
+Dear {payment.user.first_name},
+
+Thank you for subscribing to Ngena {payment.package.name.title()} package for *{payment.course.name}*. 
+
+We appreciate your support and are thrilled to have you as a user. We're confident that Ngena will 
+
+provide you with a unique and engaging learning experience that will help you achieve your educational goals.
+
+Our team has worked hard to develop a comprehensive and interactive platform that is designed to make 
+
+learning both fun and effective. If you have any questions regarding your payment, please contact us 
+
+at *admin@ngena.com* or call *263771516726* .Once again, thank you for choosing Ngena and we look forward to serving 
+
+you in your educational journey.
+
+Best regards,
+
+The Ngena Team
+                                
+"""
 
                         else:
                             payment.payment_status = 'Paid'
+                            payment.is_paid = True
                             payment.save()
-                            receipt_like_template = f"*EduBot ✅*\n\nThank you for completing your payment for assignment.\n\nYour payment of *$ {payment.package.price}* has been received work on your assignment will start shortly.\n\nIf you have any questions regarding your payment, please contact us at \n\n*"
+                            receipt_like_template = f"*Ngena ✅*\n\nThank you for completing your payment for assignment.\n\nYour payment of *$ {payment.package.price}* has been received work on your assignment will start shortly.\n\nIf you have any questions regarding your payment, please contact us at \n\n*"
                         receipt = {
                             "messaging_product": "whatsapp",
                             "recipient_type": "individual",

@@ -38,6 +38,13 @@ class TutorialViewSet(viewsets.ModelViewSet):
     renderer_classes = [JSONRenderer]
     serializer_class = TutorialSerializer
 
+    def get_queryset(self):
+        """Get queryset for the Tutorial model."""
+        #pylint: disable=no-member
+        if self.request.user.role == 'ADMIN':
+            return Tutorial.objects.all()
+        return Tutorial.objects.filter(published_by=self.request.user)
+
     @action(detail=False, methods=['post'], url_path='add_step')
     def steps(self, request):
         """Add a step to a tutorial."""
@@ -71,6 +78,13 @@ class CallRequestViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     renderer_classes = [JSONRenderer]
     serializer_class = CallRequestSerializer
+
+    def get_queryset(self):
+        """Get queryset for the CallRequest model."""
+        #pylint: disable=no-member
+        if self.request.user.role == 'ADMIN':
+            return CallRequest.objects.all()
+        return CallRequest.objects.filter(course__instructors__in=self.request.user)
 
     def update(self, request, *args, **kwargs):
         data =  super().update(request, *args, **kwargs)

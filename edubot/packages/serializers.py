@@ -28,4 +28,5 @@ class PackageSerializer(serializers.ModelSerializer):
             'Curated Content + Whatsapp Calls + Zoom Calls + Live Classes'
         ]
         data['access_permissions'] =  permissions[int(instance.access_permissions) - 1]
+        data['name'] = f"{instance.name.title()} Package"
         return data

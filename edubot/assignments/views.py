@@ -1,7 +1,9 @@
 """Assignment Views"""
 from django.http import JsonResponse
+from django.db.models import Q
 from rest_framework import viewsets
 from rest_framework.decorators import action
+
 
 #pylint: disable=no-name-in-module
 from users.permissions import IsStaff
@@ -20,9 +22,9 @@ class AssignmentViewset(viewsets.ModelViewSet):
     def get_queryset(self):
         """Override the get_queryset method."""
         queryset = super().get_queryset()
-        if self.request.user.role == "TUTOR":
-            queryset = queryset.filter(course__instructors=self.request.user)
-        return queryset
+        if self.request.user.role == "ADMIN":
+            return queryset
+        return queryset.filter(course__instructors__in=self.request.user)
 
     def perform_create(self, serializer):
         """Override the create method."""

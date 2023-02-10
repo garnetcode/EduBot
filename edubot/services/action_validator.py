@@ -14,6 +14,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from decouple import config
 from courses.models import Course
 from assignments.models import Assignment, PendingWork
+from material.models import CourseMaterial
 from quiz.models import Quiz
 from tutorials.models import CallRequest, Tutorial
 from tutorials.serializers import CallRequestSerializer
@@ -51,6 +52,7 @@ class ActionValidator(object):
             "handle_payment": self.handle_payment,
             "join_class": self.join_class,
             "cancel_payment": self.cancel_payment,
+            "materials": self.materials,
         }
         self.pagination = config("PAGINATION_COUNT", cast=int, default=5)
         self.pending_work = None
@@ -312,8 +314,7 @@ class ActionValidator(object):
                         session["data"]["selected_package"] = message
                         package = Package.objects.get(
                             id=session["data"]["selected_package"])
-                        course = Course.objects.get(
-                            code=session["data"]["selected_course"])
+                        course = Course.objects.get(code=session["data"]["selected_course"])
                         cache.set(phone_number, session, 60*60*24)
                         return {
                             "is_valid": False,
@@ -457,6 +458,8 @@ class ActionValidator(object):
                             }
                         }
                 elif message in [course.code for course in courses]:
+                    print("COURSE: ", message)
+                    print("PACKAGE: ", Package.objects.filter(service_type="course_registration"))
                     course = Course.objects.get(code=message)
                     session["data"]["selected_course"] = message
                     session['data']['action'] = 'select_package'
@@ -2358,7 +2361,7 @@ class ActionValidator(object):
             "message": {
                 "exclude_back": True,
                 "response_type": "button",
-                "text": f"*Hi {user.first_name}*,\n\nThank you.\n\nPlease wait while we process your payment, you will be notified once your payment is successful.\n\nThank you",
+                "text": f"*Hi {user.first_name}*,\n\nThank you.\n\nPlease wait while we process your payment, you will be notified once we receive confirmation for your payment.\n\nThank you",
             }
         }
 
@@ -2374,3 +2377,56 @@ class ActionValidator(object):
                 "text": f"Hi {user.first_name},\n\nYour payment has been cancelled.\n\n",
             }
         }
+
+    def course_materials(self, phone_number, message, session, payload=dict):
+        """View course materials"""
+        user = User.objects.get(phone_number=phone_number)
+        if session["data"].get("action") is None:
+            session["data"]["action"] = "course_materials"
+            cache.set(user.phone_number, session, timeout=60 * 60)
+            course_materials = CourseMaterial.objects.filter(course__students=user)
+            if course_materials:
+                paginated_response = self.paginated_menu(user, message, course_materials, session, 'course_materials', prefix='course_material')
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "paginated_interactive",
+                        "menu_name": "Course Materials",
+                        "text": "Select material to view",
+                        "menu_items": paginated_response.get("menu_items"),
+                    }
+                }
+            else:
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "button",
+                        "text": "You have no course materials",
+                    }
+                }
+        elif session["data"].get("action") == "course_materials":
+            # if message starts with course_material_ then it is a course material
+            if message.startswith("course_material_"):
+                course_material_id = message.split("_")[1]
+                course_material = CourseMaterial.objects.get(id=course_material_id)
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "document",
+                        "text": f"*{course_material.title}*\n\n{course_material.description}",
+                        "document": course_material.file.url,
+                    }
+                }
+            else:
+                return {
+                    "is_valid": False,
+                    "data": user,
+                    "message": {
+                        "response_type": "button",
+                        "text": "Invalid selection",
+                    }
+                }   
+            

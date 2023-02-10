@@ -19,6 +19,13 @@ class QuizViewset(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
     permission_classes = [IsStaff]
 
+    def get_queryset(self):
+        """Override the get_queryset method."""
+        queryset = super().get_queryset()
+        if self.request.user.role == "ADMIN":
+            return queryset
+        return queryset.filter(course__instructors__in=self.request.user)
+
     @action(detail=True, methods=['get'])
     def questions(self, request, pk=None):
         """Returns all questions for a quiz."""
