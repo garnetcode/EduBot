@@ -99,10 +99,12 @@ class Conversation(models.Model):
     
     def get_messages(self):
         """Get all the messages in a conversation."""
+        # pylint: disable=no-member
         return self.messages.all()
     
     def post_message(self, sender, content):
         """Post a message to a conversation."""
+        # pylint: disable=no-member
         message = Message.objects.create(sender=sender, content=content)
         self.messages.add(message)
         self.has_unread = True
