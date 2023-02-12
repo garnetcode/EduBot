@@ -16,7 +16,7 @@ from courses.models import Course
 from assignments.models import Assignment, PendingWork
 from material.models import CourseMaterial
 from quiz.models import Quiz
-from tutorials.models import CallRequest, Tutorial
+from tutorials.models import CallRequest, Conversation, Tutorial
 from tutorials.serializers import CallRequestSerializer
 from payments.models import Payment
 from packages.models import Package
@@ -51,8 +51,7 @@ class ActionValidator(object):
             "about": self.about,
             "handle_payment": self.handle_payment,
             "join_class": self.join_class,
-            "cancel_payment": self.cancel_payment,
-            "materials": self.materials,
+            "cancel_payment": self.cancel_payment
         }
         self.pagination = config("PAGINATION_COUNT", cast=int, default=5)
         self.pending_work = None
@@ -71,8 +70,8 @@ class ActionValidator(object):
                 "data": None,
                 "message": {
                     "response_type": "interactive",
-                    "username": "Welcome back to Ngena. What would you like to do?",
-                    "menu_name": "Main Menu",
+                    "username": "Welcome to Ngena. \n\n 📂 Enroll \n\n 📚 Courses \n\n 📝 Assignments \n\n 💳 Payments \n\n 👤 Profile\n\n 🆘 Help\n\n ℹ️ About Us\n\nWhat would you like to do?",
+                    "menu_name": "Select Action",
                     "menu_items": [
                         {"id": "enroll", "name": "📂 Enroll",
                             "description": "Enroll in a course"},
@@ -118,9 +117,9 @@ class ActionValidator(object):
                 "data": None,
                 "message": {
                     "response_type": "interactive",
-                    "text": "What would you like to do?",
+                    "text": "*Main Menu*\n\n 📂 Enroll \n\n 📚 Courses \n\n 📝 Assignments \n\n 💳 Payments \n\n 👤 Profile\n\n 🆘 Help\n\n ℹ️ About Us\n\nWhat would you like to do?",
                     "username": f"{user.first().first_name} {user.first().last_name}",
-                    "menu_name": "🏠 Main Menu",
+                    "menu_name": "🏠 Select Action",
                     "menu_items": [
                         {"id": "enroll", "name": "📂 Enroll",
                             "description": "Enroll in a course"},
@@ -273,9 +272,9 @@ class ActionValidator(object):
             "data": user.first(),
             "message": {
                 "response_type": "interactive",
-                "text": "What would you like to do?",
+                "text": "*Main Menu*\n\n 📂 Enroll \n\n 📚 Courses \n\n 📝 Assignments \n\n 💳 Payments \n\n 👤 Profile\n\n 🆘 Help\n\n ℹ️ About Us\n\nWhat would you like to do?",
                 "username": f"{user.first().first_name} {user.first().last_name}",
-                "menu_name": "🏠 Main Menu",
+                "menu_name": "🏠 Select Action",
                 "menu_items": [
                     {"id": "enroll", "name": "📂 Enroll",
                         "description": "Enroll in a course"},
@@ -321,21 +320,34 @@ class ActionValidator(object):
                             "data": user.first(),
                             "message": {
                                 "response_type": "interactive",
-                                "text": f"*Purchase 💳*\n\nSelect payment option to purchase {course.name.capitalize()}\n\nYou will be enrolled in {course.name.capitalize()} {package.name.capitalize()} package with access to {package.get_permissions()}.\n\nYou will be charged *${package.price}* for this package.",
+                                "text": f"*Payment Options*\n\n 🇺🇸 PayPal\n\n 🇿🇼 PayNow \n\nSelect payment option to purchase {course.name.capitalize()}\n\nYou will be enrolled in {course.name.capitalize()} {package.name.capitalize()} package with access to {package.get_permissions()}.\n\nYou will be charged *${package.price}* for this package.",
                                 "username": f"{user.first().first_name} {user.first().last_name}",
                                 "menu_name": "Purchase",
                                 "menu_items": [
                                     {
                                         "id": "handle_payment",
-                                        "name": "PayPal",
+                                        "name": "🇺🇸 PayPal",
                                         "description": "Complete purchase with PayPal",
                                     },
                                     {
-                                        "id": "paynow",
-                                        "name": "PayNow",
+                                        "id": "disabled",
+                                        "name": "🇿🇼 PayNow (Disabled)",
                                         "description": "Complete purchase with PayNow",
                                     },
                                 ]
+                            }
+                        }
+                    
+                    elif message == "disabled":
+                        print("PAYNOW")
+                        session["data"]["payment_method"] = "select_package"
+                        cache.set(phone_number, session, 60*60*24)
+                        return {
+                            "is_valid": False,
+                            "data": user.first(),
+                            "message": {
+                                "response_type": "text",
+                                "text": "*🇿🇼 PayNow*\n\nThis feature is currently disabled. Please select another payment option.",
                             }
                         }
                     elif message == "paynow":
@@ -347,7 +359,7 @@ class ActionValidator(object):
                             "data": user.first(),
                             "message": {
                                 "response_type": "text",
-                                "text": "*PayNow*\n\nPlease enter the phone number you want to pay with\n\ne.g. 0771111111\n\n*NB:* _The number should be registered with Ecocash or OneMoney._",
+                                "text": "*🇿🇼 PayNow*\n\nPlease enter the phone number you want to pay with\n\ne.g. 0771111111\n\n*NB:* _The number should be registered with Ecocash or OneMoney._",
                             }
                         }
                     elif session["data"].get("payment_method") == "paynow" and session["data"].get("paying_phone_number") is None:
@@ -357,7 +369,7 @@ class ActionValidator(object):
                                 "data": user.first(),
                                 "message": {
                                     "response_type": "text",
-                                    "text": f"*PayNow*\n\n{message} is not a valid number, please enter a valid phone number ",
+                                    "text": f"*🇿🇼 PayNow*\n\n{message} is not a valid number, please enter a valid phone number ",
                                 }
                             }
 
@@ -393,7 +405,7 @@ class ActionValidator(object):
                                     "data": user.first(),
                                     "message": {
                                         "response_type": "text",
-                                        "text": f"*PayNow*\n\nFailed to process payment with error *{response.get('error')}*\n\nPlease try entering your phone number again.",
+                                        "text": f"*🇿🇼 PayNow*\n\nFailed to process payment with error *{response.get('error')}*\n\nPlease try entering your phone number again.",
                                     }
                                 }
                             # Initiate payment here
@@ -402,7 +414,7 @@ class ActionValidator(object):
                                 "data": user.first(),
                                 "message": {
                                     "response_type": "text",
-                                    "text": f"*PayNow*\n\nYour ${payment.amount} {payment_method(message).lower()} payment has been initiated. Please complete the payment on your handset on prompt.",
+                                    "text": f"*🇿🇼 PayNow*\n\nYour ${payment.amount} {payment_method(message).lower()} payment has been initiated. Please complete the payment on your handset on prompt.",
                                 }
                             }
                         else:
@@ -411,50 +423,18 @@ class ActionValidator(object):
                                 "data": user.first(),
                                 "message": {
                                     "response_type": "text",
-                                    "text": f"*PayNow*\n\n{payment_method(message).title()} is not supported. Please enter a valid Ecocash or OneMoney phone number.",
+                                    "text": f"*🇿🇼 PayNow*\n\n{payment_method(message).title()} is not supported. Please enter a valid Ecocash or OneMoney phone number.",
                                 }
                             }
 
-                    elif message == "paypal":
-                        session["state"] = "menu"
-                        session["data"] = {
-                            "selected_course": None,
-                            "selected_package": None,
-                        }
-                        cache.set(phone_number, session, 60*60*24)
-                        return {
-                            "is_valid": False,
-                            "data": user.first(),
-                            "message": {
-                                "response_type": "interactive",
-                                "text": "PayPal is not yet supported. Please select another payment method.",
-                                "username": f"{user.first().first_name} {user.first().last_name}",
-                                "menu_name": "🏠 Main Menu",
-                                "menu_items": [
-                                    {"id": "enroll", "name": "📂 Enroll",
-                                        "description": "Enroll in a course"},
-                                    {"id": "courses", "name": "📚 Courses",
-                                        "description": "View your courses"},
-                                    {"id": "assignments", "name": "📝 Assignments",
-                                        "description": "Go to assignments"},
-                                    {"id": "payments", "name": "💳 Payments",
-                                        "description": "View your payments"},
-                                    {"id": "profile", "name": "👤 Profile",
-                                        "description": "View your profile"},
-                                    {"id": "help", "name": "🆘 Help",
-                                        "description": "User guide"},
-                                    {"id": "about", "name": "ℹ️ About Us",
-                                        "description": "Contact Us"},
-                                ]
-                            }
-                        }
                     else:
                         return {
                             "is_valid": False,
                             "data": "Invalid selection",
                             "message": {
-                                "response_type": "text",
-                                "text": "Invalid selection.  Please try again."
+                                "exclude_back": True,
+                                "response_type": "button",
+                                "text": "*Invalid selection*\n\nPlease select a valid option from the menu.",
                             }
                         }
                 elif message in [course.code for course in courses]:
@@ -469,7 +449,7 @@ class ActionValidator(object):
                         "data": user.first(),
                         "message": {
                             "response_type": "interactive",
-                            "text": f"*Course:* {course.name}\n*Duration:* {course.duration} week(s)\n\n*Description*\n\n{course.description}\n\n",
+                            "text": f"*Subscription Packages*\n\n*Course:* {course.name}\n*Duration:* {course.duration} week(s)\n\n*Description*\n\n{course.description}\n\n",
                             "username": f"{user.first().first_name} {user.first().last_name}",
                             "menu_name": "📦 Available Packages",
                             "menu_items": [
@@ -509,18 +489,19 @@ class ActionValidator(object):
             }
         }
         cache.set(phone_number, session, 60*60*24)
+        generate_menu = lambda courses_list: [f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
         return {
             "is_valid": False,
             "data": user.first(),
             "message": {
                 "response_type": "interactive",
-                "text": "Select a course to enroll in.",
+                "text": "*Available Courses* \n\n"+ "\n\n".join(generate_menu(courses[:self.pagination])) + f"\n\nPage {session['data']['page']} of {math.ceil(len(courses)/5)}",
                 "username": f"{user.first().first_name} {user.first().last_name}",
                 "menu_name": "📚 Available Courses",
                 "menu_items": [
                     {
                         "id": course.code,
-                        "name": course.name,
+                        "name": f"📚 {course.name}",
                         "description": f"{course.description[:45]}...",
                     } for course in courses
                 ]
@@ -528,9 +509,11 @@ class ActionValidator(object):
         } if courses else {
             "is_valid": False,
             "data": user.first(),
+
             "message": {
+                "exclude_back": True,
                 "response_type": "button",
-                "text": "*No Courses Available!!*\n\n No courses available at the moment.\nPlease contact tutor to upload courses.",
+                "text": "*No Courses Available!!*\n\nNo courses available at the moment.\nPlease contact tutor to upload courses.",
             }
         }
 
@@ -565,12 +548,13 @@ class ActionValidator(object):
                     "name": "Next",
                     "description": "Next page"
                 })
+            generate_menu = lambda courses_list: [f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
             return {
                 "is_valid": True,
                 "data": user.first(),
                 "message": {
                     "response_type": "interactive",
-                    "text": f"Your Courses({session['data']['page']} of {session['data']['total_pages']}).",
+                    "text": f"*Your Courses ({session['data']['page']} of {math.ceil(len(courses)/self.pagination)}).*\n\n"+ "\n\n".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
                     "username": f"{user.first().first_name} {user.first().last_name}",
                     "menu_name": "📚 My Courses",
                     "menu_items": [
@@ -595,20 +579,20 @@ class ActionValidator(object):
                     "description": "Previous page"
                 })
 
-            print("\n\nSESSION : ", session["data"], session["data"]["page"], session["data"]
-                  ["total_pages"], session["data"]["page"] < session["data"]["total_pages"])
-            if session["data"]["page"] < session["data"]["total_pages"]:
+            print("\n\nSESSION : ", session["data"], session["data"]["page"], math.ceil(len(courses)/self.pagination), session["data"]["page"] < math.ceil(len(courses)/self.pagination))
+            if session["data"]["page"] < math.ceil(len(courses)/self.pagination):
                 base.append({
                     "id": "next",
                     "name": "Next",
                     "description": "Next page"
                 })
+                generate_menu = lambda courses_list: [f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
                 return {
                     "is_valid": True,
                     "data": user.first(),
                     "message": {
                         "response_type": "interactive",
-                        "text": f"Your Courses({session['data']['page']} of {session['data']['total_pages']})",
+                        "text": f"*Your Courses({session['data']['page']} of {math.ceil(len(courses)/self.pagination)})*\n\n"+ " \n\n ".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
                         "username": f"{user.first().first_name} {user.first().last_name}",
                         "menu_name": "📚 My Courses",
                         "menu_items": [
@@ -646,7 +630,7 @@ class ActionValidator(object):
                         "name": "Previous",
                         "description": "Previous page"
                     })
-                if session["data"]["page"] < session["data"]["total_pages"]:
+                if session["data"]["page"] < math.ceil(len(courses)/self.pagination):
                     base.append({
                         "id": "next",
                         "name": "Next",
@@ -661,12 +645,13 @@ class ActionValidator(object):
                 ]
                 if base and menu_items and courses.count() > self.pagination:
                     menu_items.extend(base)
+                generate_menu = lambda courses_list: [f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
                 return {
                     "is_valid": False,
                     "data": user.first(),
                     "message": {
                         "response_type": "interactive",
-                        "text": f"Your Courses (Page {session['data']['page']} of {session['data']['total_pages']}).",
+                        "text": f"*Your Courses (Page {session['data']['page']} of {math.ceil(len(courses)/self.pagination)})*\n\n"+ " \n\n ".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
                         "username": f"{user.first().first_name} {user.first().last_name}",
                         "menu_name": "📚 My Courses",
                         "menu_items": menu_items
@@ -692,13 +677,13 @@ class ActionValidator(object):
                         "data": user.first(),
                         "message": {
                             "response_type": "interactive",
-                            "text": "Course Menu",
+                            "text": f"*Course Menu ({user.first().course_package(session['data']['selected_course']).name.title() if user.first().course_package(session['data']['selected_course']) else 'No Package Detected'})*\n\n 📜 Outline\n\n 📹 Tutorials\n\n 📚 Material\n\n 📊 Assessment\n\n 👨‍🏫📞 Schedule Call\n\n 🔙 Back\n\nSelect an option to continue.",
                             "username": f"{user.first().first_name} {user.first().last_name}",
                             "menu_name": f"📚 {course.name}",
                             "menu_items": [
                                 {
                                     "id": "course_outline",
-                                    "name": "📝 Outline",
+                                    "name": "📜 Outline",
                                     "description": "Course Outline"
                                 },
                                 {
@@ -722,15 +707,25 @@ class ActionValidator(object):
                                     "description": "Request a call from a tutor"
                                 },
                                 {
+                                    "id": "conversation",
+                                    "name": "🗣 Conversation",
+                                    "description": "Conversation"
+
+                                },
+                                {
                                     "id": "back_to_courses",
                                     "name": "🔙 Back",
                                     "description": "Back to courses"
-                                },
+                                }
                             ]
                         }
                     }
                 elif message == "course_menu":
                     session["action"] = "course_menu"
+                    session["data"] = {
+                        "selected_course": session["data"]["selected_course"],
+                        "page": 1,
+                    }
                     cache.set(phone_number, session, 60*60*24)
                     course = Course.objects.get(
                         code=session["data"]["selected_course"])
@@ -739,13 +734,13 @@ class ActionValidator(object):
                         "data": user.first(),
                         "message": {
                             "response_type": "interactive",
-                            "text": "Course Menu",
+                            "text": f"*Course Menu({user.first().course_package(session['data']['selected_course']).name.title() if user.first().course_package(session['data']['selected_course']) else 'No Package Detected'})*\n\n 📜 Outline\n\n 📹 Tutorials\n\n 📚 Material\n\n 📊 Assessment\n\n 👨‍🏫📞 Schedule Call\n\n 🔙 Back\n\nSelect an option to continue.",
                             "username": f"{user.first().first_name} {user.first().last_name}",
                             "menu_name": f"📚 {course.name}",
                             "menu_items": [
                                 {
                                     "id": "course_outline",
-                                    "name": "📝 Outline",
+                                    "name": "📜 Outline",
                                     "description": "Course Outline"
                                 },
                                 {
@@ -769,16 +764,26 @@ class ActionValidator(object):
                                     "description": "Request a call from a tutor"
                                 },
                                 {
+                                    "id": "conversation",
+                                    "name": "🗣 Conversation",
+                                    "description": "Conversation"
+
+                                },
+                                {
                                     "id": "back_to_courses",
                                     "name": "🔙 Back",
                                     "description": "Back to courses"
-                                },
+                                }
                             ]
                         }
                     }
                 else:
                     if session["data"].get("selected_course") and message in ["course_outline", "back"]:
                         session["back"] = -3
+                        session["data"]={
+                            'selected_course': session['data']['selected_course'],
+                            'page': 1
+                        }
                         cache.set(f"bookmark_{phone_number}", -2, 60*60*24)
                         course = Course.objects.get(
                             code=session["data"]["selected_course"])
@@ -789,13 +794,12 @@ class ActionValidator(object):
                                 "menu": "course_menu",
                                 "exclude_back": True,
                                 "response_type": "button",
-                                "text": f"*_Description_*\n\n{course.description[:1024]}",
+                                "text": f"*📜 _Course Outline_*\n\n{course.description[:1024]}",
                             }
                         }
 
                     else:
-                        print("Message", message, session["data"].get(
-                            "selected_course"), session['data'].get("action"), session["data"].get("stage"))
+                        print("Message", message, session["data"].get("selected_course"), session['data'].get("action"), session["data"].get("stage"))
                         if message == "back_to_courses":
                             session = {
                                 "action": "my_courses",
@@ -827,12 +831,14 @@ class ActionValidator(object):
                             ]
                             if base and menu_items and courses.count() > self.pagination:
                                 menu_items.extend(base)
+                                ##
+                            generate_menu = lambda courses_list: [f"*{count}.* {item.name}" for count, item in enumerate(courses_list, 1)]
                             return {
                                 "is_valid": False,
                                 "data": user.first(),
                                 "message": {
                                     "response_type": "interactive",
-                                    "text": f"Your Courses (Page {session['data']['page']} of {session['data']['total_pages']}).",
+                                    "text": f"*Your Courses (Page {session['data']['page']} of {session['data']['total_pages']})*\n\n"+ " \n\n ".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
                                     "username": f"{user.first().first_name} {user.first().last_name}",
                                     "menu_name": "📚 My Courses",
                                     "menu_items": menu_items
@@ -848,6 +854,24 @@ class ActionValidator(object):
 
                         elif message == "request_call" or session['data'].get("action") == "request_call" or session['data'].get("stage") in ["date_of_call", "agenda"]:
                             session['data']["action"] = "request_call"
+
+                            if not user.first().has_active_permission_for_course(session["data"].get("selected_course")):
+                                session["data"] = {
+                                    'selected_course': session['data']['selected_course'],
+                                    'page': 1
+                                }
+                                cache.set(phone_number, session, 60*60*24)
+                                return {
+                                    "is_valid": False,
+                                    "data": user.first(),
+                                    "message": {
+                                        "menu": "course_menu",
+                                        "exclude_back": True,
+                                        "response_type": "button",
+                                        "text": "*Request Call Unauthorised* \n\nYour subscription does not allow you to request a call. Please upgrade your subscription to request calls.",
+                                    }
+                                }
+
                             if CallRequest.call_request_exists(user=user.first(), course=Course.objects.get(code=session["data"].get("selected_course")), date_of_call=datetime.datetime.today()):
                                 return {
                                     "is_valid": False,
@@ -859,14 +883,19 @@ class ActionValidator(object):
                                         "text": "Request Call \n\nYou already have another pending call scheduled for today.",
                                     }
                                 }
+                            
+                            
                             payload = session['data'].get('payload')
                             # date fommat 2020-12-12 12:00 or 2020-12-12
                             regex_date_time = r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})\s(?P<hour>\d{2}):(?P<minute>\d{2})$"
                             regex_date = r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})$"
+                            regex_time = r"^(?P<hour>\d{2}):(?P<minute>\d{2})$"
                             print("\n\n\n\n#####################Request call",
                                   session['data'].get("action"), payload, message)
                             print("Regex", re.match(regex_date_time, message))
-                            if session['data'].get("stage") == "date_of_call" and (re.match(regex_date_time, message) or re.match(regex_date, message)):
+                            if session['data'].get("stage") == "date_of_call" and (re.match(regex_date_time, message) or re.match(regex_date, message) or re.match(regex_time, message)):
+                                if re.match(regex_time, message):
+                                    message = f"{datetime.datetime.today().strftime('%Y-%m-%d')} {message}"
                                 payload["date_of_call"] = message
                                 session['data']["payload"] = payload
                                 session['data']["stage"] = "agenda"
@@ -918,7 +947,7 @@ class ActionValidator(object):
                                         "data": user.first(),
                                         "message": {
                                             "response_type": "text",
-                                            "text": "Request Call\n\nWhen would you like to be contacted?\n\n_Please enter a valid date and time in the format: *2020-12-31 23:59*_",
+                                            "text": "Request Call\n\nWhen would you like to be contacted today ?\n\n_Please enter a valid time in the format e.g. *14:00*_",
                                         }
                                     }
                                 # REQUEST CALL FAILED
@@ -950,7 +979,7 @@ class ActionValidator(object):
                                 session['data']["tutorial_stage"] = "select_tutorial"
                                 cache.set(phone_number, session, 60*60*24)
                                 tutorials = Tutorial.objects.filter(
-                                    course__code=session["data"].get("selected_course"))
+                                    course__code=session["data"].get("selected_course"), published=True)
                                 if tutorials:
                                     # Pagination for tutorials
                                     if session['data'].get("action") == "tutorials":
@@ -981,7 +1010,7 @@ class ActionValidator(object):
                                             "name": "Previous",
                                             "description": "Previous page"
                                         })
-                                    if session["data"]["page"] < session["data"]["total_pages"]:
+                                    if session["data"]["page"] < math.ceil(len(tutorials)/self.pagination):
                                         base.append({
                                             "id": "next",
                                             "name": "Next",
@@ -989,12 +1018,14 @@ class ActionValidator(object):
                                         })
                                     if base and tutorials and courses.count() > self.pagination:
                                         tutorials.extend(base)
+                                    
+                                    generate_menu = lambda tutorials_list: [f"{count}. *{tutorial.title}*" for count, tutorial in enumerate(tutorials_list[:8], 1)]
                                     return {
                                         "is_valid": False,
                                         "data": user.first(),
                                         "message": {
                                             "response_type": "interactive",
-                                            "text": f"Tutorials ({session['data']['page']} of {session['data']['total_pages']}).",
+                                            "text": f"*Tutorials (Page {session['data']['page']} of {math.ceil(len(tutorials)/self.pagination)}).* \n\n"+ " \n\n ".join(generate_menu(tutorials)) + "\n\nSelect a tutorial to start tutorial.",
                                             "username": f"{user.first().first_name} {user.first().last_name}",
                                             "menu_name": "📹 Tutorials",
                                             "menu_items": [
@@ -1017,6 +1048,7 @@ class ActionValidator(object):
                                             "text": "*No tutorials yet!!*\n\nNo tutorials have been added to this course yet.\n\nPlease select another course or contact your tutor for more information.",
                                         }
                                     }
+                                
                             elif session['data'].get("tutorial_stage") == "select_tutorial":
                                 print("Tutorials is select_tutorial", session['data'].get(
                                     "action"), message, session['data'].get("tutorial_stage"))
@@ -1028,7 +1060,7 @@ class ActionValidator(object):
                                 print("Tutorials is select_tutorial >>>>>>>>>> ",
                                       session['data'].get("tutorial_identifier"))
                                 tutorial = Tutorial.objects.filter(
-                                    id=session['data']["tutorial_identifier"])
+                                    id=session['data']["tutorial_identifier"], published=True)
 
                                 print("Tutorials is select_tutorial", tutorial)
                                 try:
@@ -1155,8 +1187,9 @@ class ActionValidator(object):
                                             "is_valid": False,
                                             "data": user.first(),
                                             "message": {
-                                                "response_type": "text",
-                                                "text": "Invalid tutorial selected.",
+                                                "exclude_back": True,
+                                                "response_type": "button",
+                                                "text": "*Invalid selection*\n\nPlease select a valid option from the menu.",
                                             }
                                         }
                                 except Exception as e:
@@ -1322,13 +1355,14 @@ class ActionValidator(object):
                                             "is_first_step": is_first_step,
                                             "is_last_step": is_last_step,
                                             "message": {
-                                                "response_type": "text",
-                                                "text": "Invalid tutorial selected.",
+                                                "exclude_back": True,
+                                                "response_type": "button",
+                                                "text": "*Invalid selection*\n\nPlease select a valid option from the menu.",
                                             }
                                         }
                                 elif message == "tutorial_prev":
                                     tutorial = Tutorial.objects.filter(
-                                        id=session['data'].get("selected_tutorial")).first()
+                                        id=session['data'].get("selected_tutorial"), published=True).first()
                                     if tutorial:
                                         steps = tutorial.steps.all().order_by("id")
                                         if steps:
@@ -1447,10 +1481,10 @@ class ActionValidator(object):
                                                     }
                                                 }
 
-                        elif message == "course_assessment" or session["data"]["stage"] == "course_assessment":
+                        elif message == "course_assessment" or session["data"].get("action") == "select_quiz" or session["data"].get("stage") == "course_assessment":
                             print("IN HEREEEEEEssss", session)
                             all_quizzes = Quiz.objects.filter(
-                                course__code=session["data"]["selected_course"])
+                                course__code=session["data"]["selected_course"], is_published=True)
                             if cache.get(f"{phone_number}_quiz_session"):
                                 quiz_session = cache.get(
                                     f"{phone_number}_quiz_session")
@@ -1471,11 +1505,14 @@ class ActionValidator(object):
                                 session['data']["action"] = "select_quiz"
                                 cache.set(phone_number, session, 60*60*24)
                                 all_quizzes = Quiz.objects.filter(
-                                    course__code=session["data"]["selected_course"])
-                                base = []
+                                    course__code=session["data"]["selected_course"], is_published=True)
+                                base = [
+
+                                ]
                                 if all_quizzes.count() > 0:
                                     if not session["data"].get("quiz_page"):
                                         session["data"]["quiz_page"] = 1
+
                                     if not session["data"].get("total_pages"):
                                         session["data"]["total_pages"] = math.ceil(
                                             all_quizzes.count()/self.pagination)
@@ -1502,13 +1539,13 @@ class ActionValidator(object):
                                     ]
                                     if base and menu_items and courses.count() > self.pagination:
                                         menu_items.extend(base)
-
+                                    generate_menu = lambda quizzes_list: [f"{count}. *{quiz.title}*" for count, quiz in enumerate(quizzes_list[:8], 1)]
                                     return {
                                         "is_valid": False,
                                         "data": user.first(),
                                         "message": {
                                             "response_type": "interactive",
-                                            "text": f"Quiz (Page {session['data']['page']} of {session['data']['total_pages']}).",
+                                            "text": f"*Quiz Menu (Page {session['data']['page']} of {math.ceil(all_quizzes.count()/self.pagination)}).*\n\n" +" \n\n ".join(generate_menu(all_quizzes[session['data']['quiz_page']*self.pagination-self.pagination:session['data']['quiz_page']*self.pagination])) +"\n\nPlease select a quiz to take.",
                                             "username": f"{user.first().first_name} {user.first().last_name}",
                                             "menu_name": "📝 Quiz",
                                             "menu_items": menu_items
@@ -1520,7 +1557,7 @@ class ActionValidator(object):
                                         "data": user.first(),
                                         "message": {
                                             "response_type": "button",
-                                            "text": "Oops! "
+                                            "text": "*Empty*\n\nNo quiz available for this course at the moment.Please try again later.",
                                         }
                                     }
                             elif session['data'].get('stage') == "course_assessment" and session['data'].get("action") == "select_quiz":
@@ -1555,34 +1592,153 @@ class ActionValidator(object):
                                 "data": user.first(),
                                 "message": {
                                     "response_type": "button",
-                                    "text": "Select Assessment",
-                                    "buttons": [
-                                        {
-                                            "text": "Assessment 1",
-                                            "value": "assessment_1"
-                                        },
-                                        {
-                                            "text": "Assessment 2",
-                                            "value": "assessment_2"
-                                        },
-                                        {
-                                            "text": "Assessment 3",
-                                            "value": "assessment_3"
-                                        },
-                                        {
-                                            "text": "Assessment 4",
-                                            "value": "assessment_4"
-                                        },
-                                        {
-                                            "text": "Assessment 5",
-                                            "value": "assessment_5"
-                                        },
-                                    ]
+                                    "text": "*Invalid selection*\n\nPlease select a valid option from the menu.",
                                 }
                             }
+                        
+                        elif message == "conversation" or session["data"].get('action') in ["conversation", "send_message"] or (session["data"].get('action') == "conversation" and  message == "conversation"):
+                            user = User.objects.get(phone_number=phone_number)
+                            print("CONVERSATION : ", message, session['data'])
+                            if session["data"].get("action") is None:
+                                session["data"]["action"] = "conversation"
+                                cache.set(user.phone_number, session, timeout=60*60*24)
+                                conversation = Conversation.objects.filter(course__students=user, course__code=session["data"]["selected_course"]).first()
+                                if conversation:
+                                    chat = lambda conversation: [f"*From :* {item.sender.first_name} {item.sender.last_name}\n*Date :* {item.date_sent.strftime('%d-%m-%Y %H:%M:%S')}\n*Message :* {item.content}" for item in conversation.messages.all()]
+                                    session["data"]["action"] = "conversation"
+                                    cache.set(user.phone_number, session, timeout=60*60*24)
+                                    conversation.has_unread = False
+                                    conversation.save()
+                                    return {
+                                        "is_valid": False,
+                                        "data": user,
+                                        "message": {
+                                            "response_type": "conversation",
+                                            "text": f"*{conversation.course.name}*\n\n*Chat*\n\n" + "\n\n".join(chat(conversation)),
+                                        }
+                                    }
+                                else:
+                                    course = Course.objects.get(code=session["data"]["selected_course"])
+                                    session["data"]["action"] = "send_message"
+                                    cache.set(user.phone_number, session, timeout=60 * 60 * 24)
+                                    conversation.has_unread = False
+                                    conversation.save()
+                                    return {
+                                        "is_valid": False,
+                                        "data": user,
+                                        "message": {
+                                            "response_type": "conversation",
+                                            "text": f"*{course.name}*\n\n*Chat Empty*.\nSend a message to start a conversation.",
+                                        }
+                                    }
+                            elif session["data"].get("action") == "conversation":
+                                if message == "send_message":
+                                    session["data"]["action"] = "send_message"
+                                    cache.set(user.phone_number, session, timeout=60 * 60 * 24)
+                                    return {
+                                        "is_valid": False,
+                                        "data": user,
+                                        "message": {
+                                            "response_type": "text",
+                                            "text": "Enter your message...",
+                                        }
+                                    }
+                            elif session["data"].get("action") == "send_message":
+                                conversation = Conversation.objects.filter(course__students=user, course__code=session["data"]["selected_course"]).first()
+                                if conversation:
+                                    conversation.post_message(user, message)
+                                    chat = lambda conversation: [f"*From :* {item.sender.first_name} {item.sender.last_name}\n*Date :* {item.date_sent.strftime('%d-%m-%Y %H:%M:%S')}\n*Message :* {item.content}" for item in conversation.messages.all()]
+                                    session["data"]["action"] = "conversation"
+                                    cache.set(user.phone_number, session, timeout=60*60*24)
+                                    conversation.has_unread = False
+                                    conversation.save()
+                                    return {
+                                        "is_valid": False,
+                                        "data": user,
+                                        "message": {
+                                            "response_type": "conversation",
+                                            "text": f"*{conversation.course.name}*\n\nChat\n\n" + "\n\n".join(chat(conversation)),
+                                        }
+                                    }
+                                else:
+                                    course = Course.objects.get(code=session["data"]["selected_course"])
+                                    conversation = Conversation.objects.create(user=user, course=course)
+                                    conversation.post_message(user, message)
+                                    chat = lambda conversation: [f"*From :* {item.sender.first_name} {item.sender.last_name}\n*Date :* {item.date_sent.strftime('%d-%m-%Y %H:%M:%S')}\n*Message :* {item.content}" for item in conversation.messages.all()]
+                                    session["data"]["action"] = "conversation"
+                                    cache.set(user.phone_number, session, timeout=60*60*24)
+                                    conversation.has_unread = False
+                                    conversation.save()
+                                    return {
+                                        "is_valid": False,
+                                        "data": user,
+                                        "message": {
+                                            "response_type": "conversation",
+                                            "text": f"*{conversation.course.name}*\n\nChat\n\n" + "\n\n".join(chat(conversation)),
+                                        }
+                                    }
+
+                        
+                        elif message == "course_material" or session["data"].get('action') in ["course_material"] or (session["data"].get('action') == "course_material" and  message == "course_material"):
+                            user = User.objects.get(phone_number=phone_number)
+                            if session["data"].get("action") is None:
+                                session["data"]["action"] = "course_material"
+                                cache.set(user.phone_number, session, timeout=60*60*24)
+                                course_materials = CourseMaterial.objects.filter(course__students=user, course__code=session["data"]["selected_course"])
+                                if course_materials:
+                                    paginated_response = self.paginated_menu(user, message, course_materials, session, 'course_materials', prefix='course_material')
+                                    generate_menu = lambda course_materials_list: [f"*{count}.* {item.title}" for count, item in enumerate(course_materials_list[:8], 1)]
+                                    return {
+                                        "is_valid": False,
+                                        "data": user,
+                                        "message": {
+                                            "response_type": "paginated_interactive",
+                                            "menu_name": "*Course Materials*",
+                                            "text": "*Course Materials*\n\n" + " \n\n ".join(generate_menu(course_materials[session['data']['page']*self.pagination-self.pagination:session['data']['page']*self.pagination])) + "\n\nPlease select a course material to view",
+                                            "menu_items": paginated_response,
+                                        }
+                                    }
+                                else:
+                                    return {
+                                        "is_valid": False,
+                                        "data": user,
+                                        "message": {
+                                            "response_type": "button",
+                                            "text": "*Empty*\n\nNo course material available for this course at the moment.Please try again later.",
+                                        }
+                                    }
+                            elif session["data"].get("action") == "course_material":
+                                # if message starts with course_material_ then it is a course material
+                                if message.startswith("course_material_"):
+                                    course_material_id = message.split("_")[2]
+                                    course_material = CourseMaterial.objects.get(id=course_material_id, )
+                                    return {
+                                        "is_valid": False,
+                                        "data": user,
+                                        "requires_controls": True,
+                                        "is_first_step": False,
+                                        "is_last_step": False,
+                                        "type": "document",
+                                        "message": {
+                                            "response_type": "document",
+                                            "text": f"*{course_material.title}*\n\n{course_material.description}",
+                                            "document": f"{HOST}{course_material.file.url}",
+                                        }
+                                    }
+                                else:
+                                    return {
+                                        "is_valid": False,
+                                        "data": user,
+                                        "message": {
+                                            "exclude_back": True,
+                                            "response_type": "button",
+                                            "text": "*Invalid selection*\n\nPlease select a valid option from the menu.",
+                                        }
+                                    }   
+                                
                         return {
                             "is_valid": False,
-                            "data": user.first(),
+                            "data": [],
                             "message": {
                                 "exclude_back": True,
                                 "response_type": "button",
@@ -1657,7 +1813,7 @@ class ActionValidator(object):
             "data": user.first(),
             "message": {
                 "response_type": "interactive",
-                "text": "Help Menu",
+                "text": "*Help Menu*\n\n 📚 User guide\n\n 👨‍💻 Contact\n\n 🏠 Main Menu",
                 "username": f"{user.first().first_name} {user.first().last_name}",
                 "menu_name": "🆘 Help",
                 "menu_items": [
@@ -1733,7 +1889,7 @@ class ActionValidator(object):
             "message": {
                 "exclude_back": True,
                 "response_type": "button",
-                "text": "Ngena is a chatbot that helps \nyou to manage your courses \nand profile brought to you by \n*Empart*.\n\nFor more information, visit \n\n*[https://www.Ngena.com]* \n\nor contact us on  \n\n*[https://wa.me/263771516726]*",
+                "text": "*About Us*\n\nNgena is a chatbot that helps \nyou to manage your courses \nand profile brought to you by \n*Empart*.\n\nFor more information, visit * https://www.ngena.com* nor contact us on *https://wa.me/263771516726*",
             }
         }
 
@@ -1753,16 +1909,27 @@ class ActionValidator(object):
                 "data": user.first(),
                 "message": {
                     "response_type": "button",
-                    "text": f"*Payment Details*\n\n*Course: _{payment.course.name}_*\n*Amount:* ${payment.amount}\n*Date:* _{payment.created_at.strftime('%d %b %Y')}_\n*Status:* _{payment.payment_status} {'✅' if payment.payment_status == 'Paid' else '🚫'}_\n\n",
+                    "text": f"*📜Payment Details*\n\n*Course: _{payment.course.name}_*\n*Amount:* ${payment.amount}\n*Date:* _{payment.created_at.strftime('%d %b %Y')}_\n*Status:* _{payment.payment_status} {'✅' if payment.payment_status == 'Paid' else '🚫'}_\n\n",
                 }
             }
         if payments:
+            statuses = {
+                "paid": "✅",
+                "pending": "⏳",
+                "failed": "🚫",
+                "created": "📝",
+                "awaitingdelivery": "⏳",
+                "cancelled": "🚫",
+                "unknown": "❓"
+
+            }
+            generate_menu = lambda payment: [f"*{count}.* {payment.course.name} {statuses.get(payment.payment_status.strip().lower()) if statuses.get(payment.payment_status.strip().lower()) else statuses.get('unknown')}" for count, payment in enumerate(payments[:8], 1)]
             return {
                 "is_valid": True,
                 "data": user.first(),
                 "message": {
                     "response_type": "interactive",
-                    "text": "*Your Recent Payments*\n\n",
+                    "text": "*Recent Payments* \n\n"+" \n\n ".join(generate_menu(payments)),
                     "username": f"{user.first().first_name} {user.first().last_name}",
                     "menu_name": "💰 Payments",
                     "menu_items": [
@@ -1778,7 +1945,7 @@ class ActionValidator(object):
                 "data": user.first(),
                 "message": {
                     "response_type": "button",
-                    "text": "You have not made any payments yet.",
+                    "text": "*💳 No Payments Available*\n\nYou have not made any payments yet.",
                 }
             }
 
@@ -1797,7 +1964,7 @@ class ActionValidator(object):
 
         if message in [str(work.id) for work in pending_work]:
             session["data"]["assignment_id"] = message
-            cache.set(f"{phone_number}_session", session)
+            cache.set(f"{phone_number}_session", session, 60*60*24)
             work = PendingWork.objects.get(id=message)
             return {
                 "is_valid": False,
@@ -1815,7 +1982,7 @@ class ActionValidator(object):
                 "data": user,
                 "message": {
                     "response_type": "document",
-                    "text": f"*{work.title} Details*\n\n*Course: _{work.course.name}_*\n*Deadline:* _{work.deadline.strftime('%d %b %Y %H:%M') if  work.deadline else 'No deadline'}_\n*Description:* _{work.description}_\n\n",
+                    "text": f"*📜 {work.title} Details*\n\n*Course: _{work.course.name}_*\n*Deadline:* _{work.deadline.strftime('%d %b %Y %H:%M') if  work.deadline else 'No deadline'}_\n*Description:* _{work.description}_\n\n",
                     "document": settings.NGROK + work.file.url,
                     "filename": work.file.name
                 }
@@ -1823,13 +1990,13 @@ class ActionValidator(object):
 
         elif message == "upload":
             session["data"]["action"] = 'upload'
-            cache.set(f"{phone_number}_session", session)
+            cache.set(f"{phone_number}_session", session, 60*60*24)
             return {
                 "is_valid": False,
                 "data": user,
                 "message": {
                     "response_type": "text",
-                    "text": "Please upload and send your assignment as a document."
+                    "text": "*📎 Upload Document* \n\nPlease upload and send your assignment as a document here.*"
                 }
             }
 
@@ -1880,14 +2047,14 @@ class ActionValidator(object):
                 assignment.save()
                 work.save()
                 session["data"]["action"] = None
-                cache.set(f"{phone_number}_session", session)
+                cache.set(f"{phone_number}_session", session, 60*60*24)
                 return {
                     "is_valid": True,
                     "data": user,
                     "message": {
                         "exclude_back": True,
                         "response_type": "button",
-                        "text": "Your assignment has been submitted successfully.",
+                        "text": "✅ *Upload Successful*\n\nYour assignment has been submitted successfully.",
                     }
                 }
             else:
@@ -1896,26 +2063,26 @@ class ActionValidator(object):
                     "data": user,
                     "message": {
                         "response_type": "text",
-                        "text": "Please upload and send your assignment as a document."
+                        "text": "*📎 Upload Document* \n\nPlease upload and send your assignment as a document here.*"
                     }
                 }
 
         elif message == "my_assignments":
-            cache.set(f"{phone_number}_session", session)
+            cache.set(f"{phone_number}_session", session, 60*60*24)
             # filter pending work if user is enrolled in the course and user not in the list of submitted assignments
+            generate_menu = lambda pending_work: [f"*{count}.* {pending_work.title}" for count, pending_work in enumerate(pending_work[:8], 1)]
             if pending_work:
                 return {
                     "is_valid": False,
                     "data": user,
                     "message": {
                         "response_type": "interactive",
-                        "text": "*Pending Assignments*\n\n",
+                        "text": "*Pending Assignments*\n\n"+" \n\n".join(generate_menu(pending_work)),
                         "username": f"{user.first_name} {user.last_name}",
                         "menu_name": "📝 Pending",
                         "menu_items": [
                             {"id": f"{work.id}", "name": f"{work.course.name}", "description": f"Due {work.deadline.strftime('%d %b %Y %H:%M') if  work.deadline else 'No deadline'}"} for work in pending_work
                         ]
-
                     }
                 }
             return {
@@ -1923,13 +2090,13 @@ class ActionValidator(object):
                 "data": user,
                 "message": {
                     "response_type": "button",
-                    "text": "You have not been assigned any assignments yet. Please check back later.",
+                    "text": "*⚠️Not Found*\n\nYou have not been assigned any assignments yet. Please check back later.",
                 }
             }
 
         elif message == "get_help":
             session["data"]["action"] = message
-            cache.set(f"{phone_number}_session", session)
+            cache.set(f"{phone_number}_session", session, 60*60*24)
             pending = Assignment.objects.filter(
                 submitted_by=user, status="Pending", assignment_type="Outsourced")
             return {
@@ -1937,9 +2104,9 @@ class ActionValidator(object):
                 "data": user,
                 "message": {
                     "response_type": "interactive",
-                    "text": "Assignments Help Menu",
+                    "text": f"*Help Menu*\n\n 📤 Upload Assignment\n\n 📂 View Pending ({pending.count()})\n\n 🔙 Back",
                     "username": f"{user.first_name} {user.last_name}",
-                    "menu_name": "📝 Get Help",
+                    "menu_name": "🆘 Get Help",
                     "menu_items": [
                         {"id": "outsource", "name": "📤 Upload Assignment",
                             "description": "Upload your assignment"},
@@ -1952,53 +2119,67 @@ class ActionValidator(object):
             }
 
         elif session["data"].get("action") == "get_help" and message == "outsource":
-            session["data"]["action"] = "assignment_name"
+            session["data"]["action"] = "assignment_type"
             cache.set(f"{phone_number}_session", session, timeout=60*60*24)
+        
             return {
                 "is_valid": False,
                 "data": user,
                 "message": {
                     "response_type": "interactive",
-                    "text": "Please select the type of assignment you are submitting.",
-                    "menu_name": "Assignment Type",
+                    "text": "*Assignment Type*\n\n 📐 Math Assignment\n\n 🔬 Science Assignment\n\n 📚 Language Assignment\n\n 📖 Social Studies\n\n 💻 ICT Assignment\n\n 📚 Other\n\nSelect type.",
+                    "menu_name": "View Types",
                     "menu_items": [
-                        {"id": "math", "name": "Math Assignment",
+                        {"id": "math", "name": "📐 Math Assignment",
                             "description": "Math"},
-                        {"id": "science", "name": "Science Assignment",
+                        {"id": "science", "name": "🔬 Science Assignment",
                             "description": "Science"},
-                        {"id": "language", "name": "Language Assignment",
+                        {"id": "language", "name": "📚 Language Assignment",
                             "description": "Language"},
-                        {"id": "social", "name": "Social Assignment",
+                        {"id": "social", "name": "📖 Social Studies",
                             "description": "Social"},
-                        {"id": "ict", "name": "ICT Assignment", "description": "ICT"},
-                        {"id": "other", "name": "Other", "description": "Other"},
+                        {"id": "ict", "name": "💻 ICT Assignment", "description": "ICT"},
+                        {"id": "other", "name": "📚 Other", "description": "Other"},
                     ]
 
                 }
             }
-        elif session["data"].get("action") == "assignment_name" and message in ["math", "science", "language", "social", "ict", "other"]:
-            session["data"]["action"] = "upload_type"
+        elif session["data"].get("action") == "assignment_type" and message in ["math", "science", "language", "social", "ict", "other"]:
+            session["data"]["action"] = "assignment_name"
             session["data"]["field"] = message
-            cache.set(f"{phone_number}_session", session)
+            cache.set(f"{phone_number}_session", session, 60*60*24)
             return {
                 "is_valid": False,
                 "data": user,
                 "message": {
                     "response_type": "text",
-                    "text": "Please enter a reference name of the assignment you are submitting."
+                    "text": "*📜 Assignment Identifier*\n\nPlease enter a reference name of the assignment you are submitting."
                 }
             }
 
-        elif session["data"].get("action") == "upload_type":
-            session["data"]["action"] = 'receive_assignment'
+        elif session["data"].get("action") == "assignment_name":
+            session["data"]["action"] = 'assignment_description'
             session["data"]["assignment_name"] = message
-            cache.set(f"{phone_number}_session", session)
+            cache.set(f"{phone_number}_session", session, 60*60*24)
             return {
                 "is_valid": False,
                 "data": user,
                 "message": {
                     "response_type": "text",
-                    "text": "Please upload and send your assignment document and we will get back to you."
+                    "text":"*📜 Assignment Description*\n\nPlease enter a description or instructions for the assignment." 
+                }
+            }
+        
+        elif session["data"].get("action") == "assignment_description":
+            session["data"]["action"] = 'receive_assignment'
+            session["data"]["assignment_description"] = message
+            cache.set(f"{phone_number}_session", session, 60*60*24)
+            return {
+                "is_valid": False,
+                "data": user,
+                "message": {
+                    "response_type": "text",
+                    "text": "*📎 Upload Document* \n\nPlease upload and send your assignment document and we will get back to you."
                 }
             }
 
@@ -2030,6 +2211,7 @@ class ActionValidator(object):
                 assignment = Assignment.objects.create(
                     title=session["data"]["assignment_name"],
                     field_of_study=session["data"]["field"],
+                    description=session["data"]["assignment_description"],
                     assignment_type="Outsourced",
                     status="Pending",
                     submitted_by=user,
@@ -2047,7 +2229,7 @@ class ActionValidator(object):
                 assignment.save()
 
                 session["data"]["action"] = "pending_payment"
-                cache.set(f"{phone_number}_session", session)
+                cache.set(f"{phone_number}_session", session, 60*60*24)
                 return {
                     "is_valid": False,
                     "data": user,
@@ -2055,7 +2237,7 @@ class ActionValidator(object):
                         "exclude_download": True,
                         "response_type": "pay_download",
                         "id": payment.id,
-                        "text": f"We have received your assignment referenced {assignment.title.title()}.\n\nPlease note that you will be charged a fee for this service. Complete the payment process so we can start working on it.\n\nThank you for using our service.",
+                        "text": f"*📝 Assignment Received* \n\nWe have received your assignment referenced {assignment.title.title()}.\n\nPlease note that you will be charged a fee for this service. Complete the payment process so we can start working on it.\n\nThank you for using our service.",
                     }
                 }
             else:
@@ -2064,7 +2246,7 @@ class ActionValidator(object):
                     "data": user,
                     "message": {
                         "response_type": "text",
-                        "text": "Please upload and send your assignment as a document."
+                        "text": "*📎 Upload Document* \n\nPlease upload and send your assignment as a document here.*"
                     }
                 }
 
@@ -2081,13 +2263,14 @@ class ActionValidator(object):
                 key = "outsourced"
                 menu_items = self.paginated_menu(
                     user, message, section_objects, session, key, prefix="outsourced")
+                generate_menu = lambda pending_work: [f"{count}. {pending_work.title}" for count, pending_work in enumerate(pending_work[:8], 1)]
                 return {
                     "is_valid": False,
                     "data": user,
 
                     "message": {
                         "response_type": "paginated_interactive",
-                        "text": "*Pending Assignments*\n\n",
+                        "text": "*Pending Assignments*"+"\n\n".join(generate_menu(pending_work)),
                         "username": f"{user.first_name} {user.last_name}",
                         "menu_name": "📝 Pending",
                         "menu_items": menu_items
@@ -2099,7 +2282,7 @@ class ActionValidator(object):
                 "data": user,
                 "message": {
                     "response_type": "button",
-                    "text": "You have not uploaded any assignments yet. Please upload an assignment to get started.",
+                    "text": "*⚠️ Not Found* \n\nYou have not uploaded any assignments yet. Please upload an assignment to get started.",
                 }
             }
         elif session["data"].get("action") == "view_pending" and message.startswith("outsourced_"):
@@ -2113,7 +2296,7 @@ class ActionValidator(object):
                     "data": user,
                     "message": {
                         "response_type": "text",
-                        "text": f"Assignment {assignment.id} is still pending. Please complete the payment process to get started."
+                        "text": f"*⏳ Pending*\n\n{assignment.title.title()} is still pending. Please complete the payment process to get started."
                     }
                 }
 
@@ -2123,7 +2306,7 @@ class ActionValidator(object):
                     "data": user,
                     "message": {
                         "response_type": "download_outsourced",
-                        "text": f"Assignment {assignment.id} has been completed. Please download the file below.",
+                        "text": f"*✅ Completed*\n\n{assignment.title.title()} has been completed. Please download the file below.",
                         "download_solution": assignment.id
                     }
                 }
@@ -2133,7 +2316,7 @@ class ActionValidator(object):
                     "data": user,
                     "message": {
                         "response_type": "download_outsourced",
-                        "text": f"Assignment {assignment.id} is currently being worked on. Please wait for a response from our team."
+                        "text": f"*⏳ Pending*\n\n{assignment.title.title()} is currently being worked on. Please wait for a response from our team."
                     }
                 }
             elif assignment.status == "Revision":
@@ -2142,7 +2325,7 @@ class ActionValidator(object):
                     "data": user,
                     "message": {
                         "response_type": "download_outsourced",
-                        "text": f"Assignment {assignment.id} is currently being revised. Please wait for a response from our team."
+                        "text": f"*⏳ Revision*\n\n {assignment.title.title()} is currently being revised. Please wait for a response from our team."
                     }
                 }
             else:
@@ -2151,7 +2334,7 @@ class ActionValidator(object):
                     "data": user,
                     "message": {
                         "response_type": "download_outsourced",
-                        "text": f"Assignment {assignment.id} is currently being worked on. Please wait for a response from our team."
+                        "text": f"*⏳ Pending*\n\n{assignment.title.title()} is currently being worked on. Please wait for a response from our team."
                     }
                 }
 
@@ -2176,15 +2359,17 @@ class ActionValidator(object):
                           message.split("_")[1], timeout=60*60*24)
                 cache.set(f"{phone_number}", session, timeout=60*60*24)
                 print("Saving session : ", session['data'])
+                generate_menu = lambda packages: [f"{count}. {package.name.title()} Package(${package.price})" for count, package in enumerate(packages, 1)]
                 return {
                     "is_valid": False,
                     "data": user,
                     "id": "paypal",
                     "message": {
                         "response_type": "interactive",
-                        "text": "Package Menu",
+                        "text": "*Packages Menu*\n\n"+" \n\n".join(generate_menu(Package.objects.filter(service_type="assignment_outsourcing"))),
                         "username": f"{user.first_name} {user.last_name}",
                         "menu_name": "📦 Packages",
+                        "include_description": True,
                         "menu_items": [
                                 {
                                     "id": f"package_{package.id}",
@@ -2212,18 +2397,18 @@ class ActionValidator(object):
                 "data": user,
                 "message": {
                     "response_type": "interactive",
-                    "text": "Pay For Assignment.",
+                    "text": "*Complete Payment*\n\n 🇺🇸 PayPal\n\n 🇿🇼 PayNow\n\nPay For Assignment with",
                     "username": f"{user.first_name} {user.last_name}",
-                    "menu_name": "💳 Complete Payment",
+                    "menu_name": "Payment Options",
                     "menu_items": [
                         {
                             "id": "handle_payment",
-                            "name": "PayPal",
+                            "name": "🇺🇸 PayPal",
                             "description": "Complete purchase with PayPal",
                         },
                         {
-                            "id": "paynow",
-                            "name": "PayNow",
+                            "id": "handle_payment",
+                            "name": "🇿🇼 PayNow (disabled)",
                             "description": "Complete purchase with PayNow",
                         },
                     ]
@@ -2235,13 +2420,13 @@ class ActionValidator(object):
             "data": user,
             "message": {
                 "response_type": "interactive",
-                "text": "Assignments Menu",
+                "text": "*Assignments*\n\n 📚 Course Assignments\n\n 📝 Outsource Assignment\n\n 🏠 Main Menu\n\nSelect an option below",
                 "username": f"{user.first_name} {user.last_name}",
-                "menu_name": "📝 Assignments",
+                "menu_name": "📝 Assignment Menu",
                 "menu_items": [
                     {"id": "my_assignments", "name": "📚 Course Assignments",
                         "description": "View your assignments"},
-                    {"id": "get_help", "name": "📝 Outsourced Assignment",
+                    {"id": "get_help", "name": "📝 Outsource Assignment",
                         "description": "Get help with your assignments"},
                     {"id": "menu", "name": "🏠 Main Menu",
                         "description": "Back to main menu"},
@@ -2289,7 +2474,7 @@ class ActionValidator(object):
                 ) if payment_response.get("status") else "Failed"
                 payment.upstream_response = payment_response.get("response")
                 payment.save()
-                message = f"*Payment Order Created*\n\nPlease follow the link below to complete your payment\n\n{payment_response.get('url')}"
+                message = f"*📜 Payment Order Created*\n\nPlease follow the link below to complete your payment\n\n{payment_response.get('url')}"
             else:
                 payment.upstream_response = payment_response.get("response")
                 payment.save()
@@ -2315,8 +2500,8 @@ class ActionValidator(object):
             paypal_payload['description'] = f"Assignment {assignment.id}"
             paypal_payload['amount'] = float(payment.amount)
 
-            paypal_payload["returnUrl"] = f"{settings.PAYPAL_RETURN_URL}?payment_id={payment.id}"
-            paypal_payload["cancelUrl"] = f"{settings.PAYPAL_CANCEL_URL}?payment_id={payment.id}"
+            paypal_payload["returnUrl"] = f"{settings.PAYPAL_RETURN_URL_ASSIGNMENT}"
+            paypal_payload["cancelUrl"] = f"{settings.PAYPAL_CANCEL_URL}"
 
             payment_client = PAYPALCLIENTAPI(paypal_payload)
             payment_response = payment_client.online_payment()
@@ -2328,7 +2513,7 @@ class ActionValidator(object):
                 ) if payment_response.get("status") else "Failed"
                 payment.upstream_response = payment_response.get("response")
                 payment.save()
-                message = f"*Payment Order Created*\n\nPlease follow the link below to complete your payment\n\n{payment_response.get('url')}"
+                message = f"*📜 Payment Order Created*\n\nPlease follow the link below to complete your payment\n\n{payment_response.get('url')}"
             else:
                 payment.upstream_response = payment_response.get("response")
                 payment.save()
@@ -2360,8 +2545,8 @@ class ActionValidator(object):
             "data": user,
             "message": {
                 "exclude_back": True,
-                "response_type": "button",
-                "text": f"*Hi {user.first_name}*,\n\nThank you.\n\nPlease wait while we process your payment, you will be notified once we receive confirmation for your payment.\n\nThank you",
+                "response_type": "text",
+                "text": f"*🙏 Thank you {user.first_name}*\n\nPlease wait while we process your payment, you will be notified once we receive confirmation for your payment.\n\nThank you",
             }
         }
 
@@ -2378,55 +2563,5 @@ class ActionValidator(object):
             }
         }
 
-    def course_materials(self, phone_number, message, session, payload=dict):
-        """View course materials"""
-        user = User.objects.get(phone_number=phone_number)
-        if session["data"].get("action") is None:
-            session["data"]["action"] = "course_materials"
-            cache.set(user.phone_number, session, timeout=60 * 60)
-            course_materials = CourseMaterial.objects.filter(course__students=user)
-            if course_materials:
-                paginated_response = self.paginated_menu(user, message, course_materials, session, 'course_materials', prefix='course_material')
-                return {
-                    "is_valid": False,
-                    "data": user,
-                    "message": {
-                        "response_type": "paginated_interactive",
-                        "menu_name": "Course Materials",
-                        "text": "Select material to view",
-                        "menu_items": paginated_response.get("menu_items"),
-                    }
-                }
-            else:
-                return {
-                    "is_valid": False,
-                    "data": user,
-                    "message": {
-                        "response_type": "button",
-                        "text": "You have no course materials",
-                    }
-                }
-        elif session["data"].get("action") == "course_materials":
-            # if message starts with course_material_ then it is a course material
-            if message.startswith("course_material_"):
-                course_material_id = message.split("_")[1]
-                course_material = CourseMaterial.objects.get(id=course_material_id)
-                return {
-                    "is_valid": False,
-                    "data": user,
-                    "message": {
-                        "response_type": "document",
-                        "text": f"*{course_material.title}*\n\n{course_material.description}",
-                        "document": course_material.file.url,
-                    }
-                }
-            else:
-                return {
-                    "is_valid": False,
-                    "data": user,
-                    "message": {
-                        "response_type": "button",
-                        "text": "Invalid selection",
-                    }
-                }   
-            
+
+

@@ -88,7 +88,7 @@ class ActionPickerService(object):
                                     {
                                         "id": item['id'],
                                         "title":  f"{item['name']}",
-                                        # "description": f"{item['description'][:60]}...",
+                                        "description": f"{item['description'][:60]}{'...' if len(item['description'])>60 else '' }" if response['body'].get('include_description') else "",
 
 
                                     } for item in response['body'].get('menu_items')
@@ -383,6 +383,39 @@ class ActionPickerService(object):
                 })
             }
 
+        elif response["body"].get('response_type') == "conversation":
+            chat_response = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": response.get('phone_number'),
+                "type": "interactive",
+                "interactive": json.dumps({
+                    "type": "button",
+                    "body": {
+                        "text": f"{response['body'].get('text')}"
+                    },
+                    "action": {
+                        "buttons": [
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "send_message",
+                                    "title": "📤 Send"
+                                }
+                            },
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "course_menu",
+                                    "title": "🏠 Menu"
+                                }
+                            }
+                        ]
+                    }
+                })
+            }
+            return chat_response
+
         else:
             return {
                 "messaging_product": "whatsapp",
@@ -430,6 +463,8 @@ class ActionPickerService(object):
         ).exists():
             cache.delete(self.payload.get('phone_number'))
             cache.delete(f"{self.payload.get('phone_number')}_quiz_session")
+            cache.delete(f"{self.payload.get('phone_number')}_history")
+            cache.delete(f"bookmark_{self.payload.get('phone_number')}")
             state = "greet"
 
         print("Current STATE : ", state)
@@ -437,32 +472,32 @@ class ActionPickerService(object):
             print("State is a list")
             state = self.payload.get('body').lower()
 
-        print("CALLING VALIDATOR :",
-              self.action_table[state]['action_validator'])
-        action = self.validator.registry[
-            self.action_table[state]['action_validator']
-        ](
-            phone_number=self.payload.get('phone_number'),
-            message=self.payload.get('body'),
-            session=self.session,
-            payload=self.payload
-        )
-        # try:
 
-        # except (TypeError, KeyError) as e:
-        #     print("Invalid Response", e)
-        #     response = response = {
-        #         "phone_number": self.payload.get('phone_number'),
-        #         "body": {
-        #             "text": "*😕 Invalid Response*\n\nSorry I didn't understand that. That could be an invalid option.\n\n_Please try again._",
-        #             "response_type": "text",
+        try:
+            print("CALLING VALIDATOR :",
+            self.action_table[state]['action_validator'])
+            action = self.validator.registry[
+                self.action_table[state]['action_validator']
+            ](
+                phone_number=self.payload.get('phone_number'),
+                message=self.payload.get('body'),
+                session=self.session,
+                payload=self.payload
+            )
+        except (TypeError, KeyError) as e:
+            print("Invalid Response", e)
+            response = response = {
+                "phone_number": self.payload.get('phone_number'),
+                "body": {
+                    "text": "*😕 Invalid Response*\n\nSorry I didn't understand that. That could be an invalid option.\n\n_Please try again._",
+                    "response_type": "text",
 
-        #         }
-        #     }
-        # print("RESPONSE : >>>>>>>>>>>", response)
-        # resp = self.send_response(self.construct_response(response))
-        # print("RESPONSE : ", resp)
-        # return
+                }
+            }
+            print("RESPONSE : >>>>>>>>>>>", response)
+            resp = self.send_response(self.construct_response(response))
+            print("RESPONSE : ", resp)
+            return
 
         print("\n\nAction :")
 
@@ -522,49 +557,9 @@ class ActionPickerService(object):
                     "data": action["message"].get('choices') if action.get('type') == "quiz" else None,
 
                 },
-                timeout=60*60*24*7
+                timeout=60*60*24
             )
-            print("Waiting for 2 seconds")
-            # payload = {
-            #     "messaging_product": "whatsapp",
-            #     "recipient_type": "individual",
-            #     "to": self.payload.get('phone_number'),
-            #     "type": "interactive",
-            #     "interactive": {
-            #         "type": "button",
-            #         "body": {
-            #             "text": "_Use control panel for naviation._"
-            #         },
-            #         "action": {
-            #             "buttons": [
-            #                 {
-            #                     "type": "reply",
-            #                     "reply": {
-            #                         "id": "tutorial_prev",
-            #                         "title": "🔙 Previous"
-            #                     }
-            #                 },
-            #                 {
-            #                     "type": "reply",
-            #                     "reply": {
-            #                         "id": "tutorial_next",
-            #                         "title": "🔜 Forward "
-            #                     }
-            #                 }
-            #             ]
-            #         }
-            #     }
-            # }
-            # print("Sending controls", payload["interactive"]["action"]["buttons"])
-            # if action.get('is_first_step'):
-            #     payload["interactive"]["action"]["buttons"].pop(0)
-            # else:
-            #     if action.get('is_last_step'):
-            #         payload["interactive"]["action"]["buttons"][1]['reply']['title'] = "🏁 Finish"
-            # interactive = json.dumps(payload.pop("interactive"))
-            # payload["interactive"] = interactive
-            # print("Sending controls", payload)
-            # print(self.send_response(payload).json())
+            
         return
 
     def history(self, response):
@@ -577,14 +572,14 @@ class ActionPickerService(object):
             history.append(response)
         else:
             history.append(response)
-        cache.set(f"{phone_number}_history", history)
+        cache.set(f"{phone_number}_history", history, 60*60*24)
         return
 
     def go_back(self):
         """Go back to the previous state."""
         phone_number = self.payload.get('phone_number')
         history = cache.get(f"{phone_number}_history", [])
-        if history:
+        if history and len(history) > 1:
             mark = cache.get(f"bookmark_{phone_number}", -2)
             cache.delete(f"bookmark_{phone_number}")
             print("SESSION : ", mark)
@@ -611,5 +606,5 @@ class ActionPickerService(object):
     def save_session(self, session):
         """Save the session."""
         cache.set(self.payload.get('phone_number'),
-                  session, timeout=60*60*24*7)
+                  session, timeout=60*60*24)
         return session

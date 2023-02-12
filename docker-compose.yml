@@ -17,6 +17,7 @@ services:
     image: postgres:13.0-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -36,6 +37,10 @@ services:
 
     restart: always
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8005
+    volumes:
+      - type: bind
+        source: ./edubot
+        target: /var/www/media/
     ports:
       - 8005:8005
     depends_on:
@@ -45,6 +50,7 @@ services:
 volumes:
   redisdata:
   postgres_data:
+  media:
   .:
 
 

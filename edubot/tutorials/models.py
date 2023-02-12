@@ -79,3 +79,43 @@ class CallRequest(models.Model):
         """Check if the call request exists."""
         #pylint: disable=no-member
         return cls.objects.filter(requested_by=user, course=course, date_of_call__date=date_of_call, status='pending').exists()
+
+
+
+class Conversation(models.Model):
+    """A conversation is a collection of messages."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE)
+    has_unread = models.BooleanField(default=False)
+    messages = models.ManyToManyField('Message')
+    
+
+    def __str__(self):
+        """Unicode representation of Conversation."""
+        return f"{self.user} - {self.course}"
+
+    
+    def get_messages(self):
+        """Get all the messages in a conversation."""
+        return self.messages.all()
+    
+    def post_message(self, sender, content):
+        """Post a message to a conversation."""
+        message = Message.objects.create(sender=sender, content=content)
+        self.messages.add(message)
+        self.has_unread = True
+        return message
+    
+
+class Message(models.Model):
+    """A message is a single message in a conversation."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    date_sent = models.DateTimeField(auto_now_add=True)
+    sender = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    content = models.TextField()
+
+    def __str__(self):
+        """Unicode representation of Message."""
+        return f"{self.sender} - {self.content}"

@@ -1,11 +1,13 @@
 
 """Importing required libraries"""
+from datetime import datetime
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 
 from config.fields import PseudonymizedField
 from config.utils import mask, unmask
+from subscriptions.models import Subscription
 
 
 
@@ -87,10 +89,29 @@ class User(AbstractUser):
     def get_full_name(self):
         """Get full name of user"""
         return f'{self.first_name} {self.last_name}'
+    
+    def has_active_permission_for_course(self, course):
+        """Check if user has permission for course"""
+        print("CHECKING SUBSCRIPTION FOR : ", self, course, Subscription.objects.filter(user=self, course__code=course).exists(), Subscription.objects.filter(user=self, course__code=course, expires_at__gte=datetime.now()).exists())
+        if Subscription.objects.filter(user=self, course__code=course, expires_at__gte=datetime.now()).exists():
+            subscription = Subscription.objects.filter(user=self, course__code=course, expires_at__gte=datetime.now()).first()
+            print("ACCESS PERMISSION : ", subscription.package.access_permissions)
+            if subscription.package.access_permissions in ['2', '3', '4']:
+                return True
+        return False
+    
+    def course_package(self, course):
+        """Get course package"""
+        if Subscription.objects.filter(user=self, course__code=course).exists():
+            subscription = Subscription.objects.filter(user=self, course__code=course).first()
+            return subscription.package
+        return None
 
 
     @classmethod
     def filter_by_phone_number(cls, phone):
         """Filter user by phone number"""
         return cls.objects.filter(phone_number=phone).first()
+    
+
 

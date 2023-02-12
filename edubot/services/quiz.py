@@ -3,7 +3,7 @@ from django.core.cache import cache
 # pylint: disable = no-name-in-module
 # pylint: disable = import-error
 # pylint: disable = import-self
-from quiz.models import Quiz
+from quiz.models import Quiz, Result
 from users.models import User
 
 
@@ -77,7 +77,7 @@ class QuizService:
                     "message": {
                         "response_type": "image",
                         "image": "https://bow-space.com/media/files/quizz/4.png",#question.file.url if question.file else None,
-                        "text": f"*Question* \n\n{question.question}\n\n*A*. {question.choice_1}\n\n*B*. {question.choice_2}n\n*C*. {question.choice_3}n\n*D*. {question.choice_4}",
+                        "text": f"*Question* \n\n{question.question}\n\n*A*. {question.choice_1}\n\n*B*. {question.choice_2}\n\n*C*. {question.choice_3}\n\n*D*. {question.choice_4}",
                         "answer": question.answer,
                     }
                 }
@@ -97,6 +97,9 @@ class QuizService:
                 }
 
         else:
+            user = User.objects.get(phone_number=self.phone_number)
+            result = Result.objects.get(user=user, quiz=self.quiz)
+            
             cache.delete(f"{self.phone_number}_quiz_session")
             return {
                 "is_valid": True,
@@ -108,7 +111,16 @@ class QuizService:
                     "menu": "course_menu",
                     "exclude_back": True,
                     "response_type": "button",
-                    "text": "You have completed the quiz. Thank you.",
+                    "text": f"""
+*Congratulations {user.first_name}* 👏\n
+
+You have completed {self.quiz.title} Score is {result.score}/{self.quiz.get_questions_count()}. {'You can do better' if (result.score/self.quiz.get_questions_count())<0.5 else 'Well done!'} Based on your performance, It looks like you {'do not' if (result.score/self.quiz.get_questions_count())<0.5 else ''} have a solid understanding of the topic.
+
+Please keep an eye on your assessment section for any new quiz.
+
+If you have any feedback or suggestions on how we can improve our quizzes, we would love to hear from you.
+
+Click the menu button below to return to course menu"""
                 }
                 
             }

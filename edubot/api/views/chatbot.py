@@ -116,7 +116,7 @@ class Navigation(APIView):
                     "interactive": json.dumps({
                         "type": "list",
                         "body": {
-                            "text": " Select the most appropriate answer "
+                            "text": " Select most appropriate answer "
                         },
                         "action": {
                             "button": "Select Choices",
@@ -129,6 +129,41 @@ class Navigation(APIView):
                                             "title": item,
                                         } for item in ["A", "B", "C", "D"]
                                     ]
+                                }
+                            ]
+                        }
+                    })
+                }
+                resp = send_response(response_data)
+                print("RESPONSE >>>> ", resp.json())
+                cache.delete(f"{payload.get('recipient_id')}_nav")
+
+            elif payload.get('status') == "read" and record.get('type') in ["document", "audio", "video", "image"]:
+                print("NOT READ >>>> ", record)
+                messages = {
+                    "document": "Use button for navigation",
+                    "audio": "Use button for navigation",
+                    "video": "Use the button below for navigation",
+                    "image": "Use the button below for navigation",
+                }
+                response_data = {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": payload.get('recipient_id'),
+                    "type": "interactive",
+                    "interactive": json.dumps({
+                        "type": "button",
+                        "body": {
+                            "text": messages.get(record.get('response_type'))
+                        },
+                        "action": {
+                            "buttons": [
+                                {
+                                    "type": "reply",
+                                    "reply": {
+                                        "id": "course_menu",
+                                        "title": "🏠 Menu"
+                                    }
                                 }
                             ]
                         }

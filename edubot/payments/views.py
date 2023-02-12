@@ -1,8 +1,10 @@
 """Views for payments app."""
+from datetime import timedelta, datetime
 import json
 from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+from subscriptions.models import Subscription
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 # pylint: disable=import-error
@@ -224,6 +226,13 @@ class PayPalWebhookView(APIView):
                             payment.user.save()
                             payment.course.save()
                             payment.save()
+                            delta = datetime.now() + timedelta(days=payment.course.duration*7)
+                            Subscription.objects.create(
+                                user=payment.user,
+                                course=payment.course,
+                                package=payment.package,
+                                expires_at=delta,
+                            )
                             receipt_like_template = f"""
 
 *Ngena ✅*\n\n
@@ -232,17 +241,9 @@ Dear {payment.user.first_name},
 
 Thank you for subscribing to Ngena {payment.package.name.title()} package for *{payment.course.name}*. 
 
-We appreciate your support and are thrilled to have you as a user. We're confident that Ngena will 
+We appreciate your support and are thrilled to have you as a user. We're confident that Ngena will provide you with a unique and engaging learning experience that will help you achieve your educational goals.
 
-provide you with a unique and engaging learning experience that will help you achieve your educational goals.
-
-Our team has worked hard to develop a comprehensive and interactive platform that is designed to make 
-
-learning both fun and effective. If you have any questions regarding your payment, please contact us 
-
-at *admin@ngena.com* or call *263771516726* .Once again, thank you for choosing Ngena and we look forward to serving 
-
-you in your educational journey.
+Our team has worked hard to develop a comprehensive and interactive platform that is designed to make learning both fun and effective. If you have any questions regarding your payment, please contact us at *admin@ngena.com* or call *263771516726* .Once again, thank you for choosing Ngena and we look forward to serving you in your educational journey.
 
 Best regards,
 
@@ -254,7 +255,7 @@ The Ngena Team
                             payment.payment_status = 'Paid'
                             payment.is_paid = True
                             payment.save()
-                            receipt_like_template = f"*Ngena ✅*\n\nThank you for completing your payment for assignment.\n\nYour payment of *$ {payment.package.price}* has been received work on your assignment will start shortly.\n\nIf you have any questions regarding your payment, please contact us at \n\n*"
+                            receipt_like_template = f"*Ngena ✅*\n\nThank you for completing your payment for assignment.\n\nYour payment of *${payment.package.price}* has been received, work on your assignment will start shortly.\n\nIf you have any questions regarding your payment, please contact us at *info@ngena.com* or call *263771516726* .\n\nOnce again, thank you for choosing Ngena and we look forward to serving you in your educational journey.\n\nBest regards,\n\nThe Ngena Team"
                         receipt = {
                             "messaging_product": "whatsapp",
                             "recipient_type": "individual",
