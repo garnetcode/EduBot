@@ -1,4 +1,4 @@
- """Action validator for the Ngena."""
+"""Action validator for the Ngena."""
 # pylint: disable=line-too-long
 # pylint: disable=import-error
 # pylint: disable=no-name-in-module
@@ -34,6 +34,7 @@ HOST = config("HOST", default="http://localhost:8000")
 
 class ActionValidator(object):
     """Action validator for the Ngena."""
+
     def __init__(self):
         """Initialize the action validator."""
         self.registry = {
@@ -312,7 +313,8 @@ class ActionValidator(object):
                         session["data"]["selected_package"] = message
                         package = Package.objects.get(
                             id=session["data"]["selected_package"])
-                        course = Course.objects.get(code=session["data"]["selected_course"])
+                        course = Course.objects.get(
+                            code=session["data"]["selected_course"])
                         cache.set(phone_number, session, 60*60*24)
                         return {
                             "is_valid": False,
@@ -336,7 +338,7 @@ class ActionValidator(object):
                                 ]
                             }
                         }
-                    
+
                     elif message == "disabled":
                         print("PAYNOW")
                         session["data"]["payment_method"] = "select_package"
@@ -438,7 +440,8 @@ class ActionValidator(object):
                         }
                 elif message in [course.code for course in courses]:
                     print("COURSE: ", message)
-                    print("PACKAGE: ", Package.objects.filter(service_type="course_registration"))
+                    print("PACKAGE: ", Package.objects.filter(
+                        service_type="course_registration"))
                     course = Course.objects.get(code=message)
                     session["data"]["selected_course"] = message
                     session['data']['action'] = 'select_package'
@@ -488,13 +491,14 @@ class ActionValidator(object):
             }
         }
         cache.set(phone_number, session, 60*60*24)
-        generate_menu = lambda courses_list: [f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
+        def generate_menu(courses_list): return [
+            f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
         return {
             "is_valid": False,
             "data": user.first(),
             "message": {
                 "response_type": "interactive",
-                "text": "*Available Courses* \n\n"+ "\n\n".join(generate_menu(courses[:self.pagination])) + f"\n\nPage {session['data']['page']} of {math.ceil(len(courses)/5)}",
+                "text": "*Available Courses* \n\n" + "\n\n".join(generate_menu(courses[:self.pagination])) + f"\n\nPage {session['data']['page']} of {math.ceil(len(courses)/5)}",
                 "username": f"{user.first().first_name} {user.first().last_name}",
                 "menu_name": "📚 Available Courses",
                 "menu_items": [
@@ -547,13 +551,15 @@ class ActionValidator(object):
                     "name": "Next",
                     "description": "Next page"
                 })
-            generate_menu = lambda courses_list: [f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
+
+            def generate_menu(courses_list): return [
+                f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
             return {
                 "is_valid": True,
                 "data": user.first(),
                 "message": {
                     "response_type": "interactive",
-                    "text": f"*Your Courses ({session['data']['page']} of {math.ceil(len(courses)/self.pagination)}).*\n\n"+ "\n\n".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
+                    "text": f"*Your Courses ({session['data']['page']} of {math.ceil(len(courses)/self.pagination)}).*\n\n" + "\n\n".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
                     "username": f"{user.first().first_name} {user.first().last_name}",
                     "menu_name": "📚 My Courses",
                     "menu_items": [
@@ -578,20 +584,23 @@ class ActionValidator(object):
                     "description": "Previous page"
                 })
 
-            print("\n\nSESSION : ", session["data"], session["data"]["page"], math.ceil(len(courses)/self.pagination), session["data"]["page"] < math.ceil(len(courses)/self.pagination))
+            print("\n\nSESSION : ", session["data"], session["data"]["page"], math.ceil(len(
+                courses)/self.pagination), session["data"]["page"] < math.ceil(len(courses)/self.pagination))
             if session["data"]["page"] < math.ceil(len(courses)/self.pagination):
                 base.append({
                     "id": "next",
                     "name": "Next",
                     "description": "Next page"
                 })
-                generate_menu = lambda courses_list: [f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
+
+                def generate_menu(courses_list): return [
+                    f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
                 return {
                     "is_valid": True,
                     "data": user.first(),
                     "message": {
                         "response_type": "interactive",
-                        "text": f"*Your Courses({session['data']['page']} of {math.ceil(len(courses)/self.pagination)})*\n\n"+ " \n\n ".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
+                        "text": f"*Your Courses({session['data']['page']} of {math.ceil(len(courses)/self.pagination)})*\n\n" + " \n\n ".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
                         "username": f"{user.first().first_name} {user.first().last_name}",
                         "menu_name": "📚 My Courses",
                         "menu_items": [
@@ -644,13 +653,15 @@ class ActionValidator(object):
                 ]
                 if base and menu_items and courses.count() > self.pagination:
                     menu_items.extend(base)
-                generate_menu = lambda courses_list: [f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
+
+                def generate_menu(courses_list): return [
+                    f"{count}. {course.name}" for count, course in enumerate(courses_list, 1)]
                 return {
                     "is_valid": False,
                     "data": user.first(),
                     "message": {
                         "response_type": "interactive",
-                        "text": f"*Your Courses (Page {session['data']['page']} of {math.ceil(len(courses)/self.pagination)})*\n\n"+ " \n\n ".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
+                        "text": f"*Your Courses (Page {session['data']['page']} of {math.ceil(len(courses)/self.pagination)})*\n\n" + " \n\n ".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
                         "username": f"{user.first().first_name} {user.first().last_name}",
                         "menu_name": "📚 My Courses",
                         "menu_items": menu_items
@@ -779,7 +790,7 @@ class ActionValidator(object):
                 else:
                     if session["data"].get("selected_course") and message in ["course_outline", "back"]:
                         session["back"] = -3
-                        session["data"]={
+                        session["data"] = {
                             'selected_course': session['data']['selected_course'],
                             'page': 1
                         }
@@ -798,7 +809,8 @@ class ActionValidator(object):
                         }
 
                     else:
-                        print("Message", message, session["data"].get("selected_course"), session['data'].get("action"), session["data"].get("stage"))
+                        print("Message", message, session["data"].get(
+                            "selected_course"), session['data'].get("action"), session["data"].get("stage"))
                         if message == "back_to_courses":
                             session = {
                                 "action": "my_courses",
@@ -831,13 +843,15 @@ class ActionValidator(object):
                             if base and menu_items and courses.count() > self.pagination:
                                 menu_items.extend(base)
                                 ##
-                            generate_menu = lambda courses_list: [f"*{count}.* {item.name}" for count, item in enumerate(courses_list, 1)]
+
+                            def generate_menu(courses_list): return [
+                                f"*{count}.* {item.name}" for count, item in enumerate(courses_list, 1)]
                             return {
                                 "is_valid": False,
                                 "data": user.first(),
                                 "message": {
                                     "response_type": "interactive",
-                                    "text": f"*Your Courses (Page {session['data']['page']} of {session['data']['total_pages']})*\n\n"+ " \n\n ".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
+                                    "text": f"*Your Courses (Page {session['data']['page']} of {session['data']['total_pages']})*\n\n" + " \n\n ".join(generate_menu(courses[session["data"]["page"]*self.pagination-self.pagination:session["data"]["page"]*self.pagination])),
                                     "username": f"{user.first().first_name} {user.first().last_name}",
                                     "menu_name": "📚 My Courses",
                                     "menu_items": menu_items
@@ -882,8 +896,7 @@ class ActionValidator(object):
                                         "text": "Request Call \n\nYou already have another pending call scheduled for today.",
                                     }
                                 }
-                            
-                            
+
                             payload = session['data'].get('payload')
                             # date fommat 2020-12-12 12:00 or 2020-12-12
                             regex_date_time = r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})\s(?P<hour>\d{2}):(?P<minute>\d{2})$"
@@ -1017,14 +1030,15 @@ class ActionValidator(object):
                                         })
                                     if base and tutorials and courses.count() > self.pagination:
                                         tutorials.extend(base)
-                                    
-                                    generate_menu = lambda tutorials_list: [f"{count}. *{tutorial.title}*" for count, tutorial in enumerate(tutorials_list[:8], 1)]
+
+                                    def generate_menu(tutorials_list): return [
+                                        f"{count}. *{tutorial.title}*" for count, tutorial in enumerate(tutorials_list[:8], 1)]
                                     return {
                                         "is_valid": False,
                                         "data": user.first(),
                                         "message": {
                                             "response_type": "interactive",
-                                            "text": f"*Tutorials (Page {session['data']['page']} of {math.ceil(len(tutorials)/self.pagination)}).* \n\n"+ " \n\n ".join(generate_menu(tutorials)) + "\n\nSelect a tutorial to start tutorial.",
+                                            "text": f"*Tutorials (Page {session['data']['page']} of {math.ceil(len(tutorials)/self.pagination)}).* \n\n" + " \n\n ".join(generate_menu(tutorials)) + "\n\nSelect a tutorial to start tutorial.",
                                             "username": f"{user.first().first_name} {user.first().last_name}",
                                             "menu_name": "📹 Tutorials",
                                             "menu_items": [
@@ -1047,7 +1061,7 @@ class ActionValidator(object):
                                             "text": "*No tutorials yet!!*\n\nNo tutorials have been added to this course yet.\n\nPlease select another course or contact your tutor for more information.",
                                         }
                                     }
-                                
+
                             elif session['data'].get("tutorial_stage") == "select_tutorial":
                                 print("Tutorials is select_tutorial", session['data'].get(
                                     "action"), message, session['data'].get("tutorial_stage"))
@@ -1538,13 +1552,15 @@ class ActionValidator(object):
                                     ]
                                     if base and menu_items and courses.count() > self.pagination:
                                         menu_items.extend(base)
-                                    generate_menu = lambda quizzes_list: [f"{count}. *{quiz.title}*" for count, quiz in enumerate(quizzes_list[:8], 1)]
+
+                                    def generate_menu(quizzes_list): return [
+                                        f"{count}. *{quiz.title}*" for count, quiz in enumerate(quizzes_list[:8], 1)]
                                     return {
                                         "is_valid": False,
                                         "data": user.first(),
                                         "message": {
                                             "response_type": "interactive",
-                                            "text": f"*Quiz Menu (Page {session['data']['page']} of {math.ceil(all_quizzes.count()/self.pagination)}).*\n\n" +" \n\n ".join(generate_menu(all_quizzes[session['data']['quiz_page']*self.pagination-self.pagination:session['data']['quiz_page']*self.pagination])) +"\n\nPlease select a quiz to take.",
+                                            "text": f"*Quiz Menu (Page {session['data']['page']} of {math.ceil(all_quizzes.count()/self.pagination)}).*\n\n" + " \n\n ".join(generate_menu(all_quizzes[session['data']['quiz_page']*self.pagination-self.pagination:session['data']['quiz_page']*self.pagination])) + "\n\nPlease select a quiz to take.",
                                             "username": f"{user.first().first_name} {user.first().last_name}",
                                             "menu_name": "📝 Quiz",
                                             "menu_items": menu_items
@@ -1595,18 +1611,22 @@ class ActionValidator(object):
                                     "text": "*Invalid selection*\n\nPlease select a valid option from the menu.",
                                 }
                             }
-                        
-                        elif message == "conversation" or session["data"].get('action') in ["conversation", "send_message"] or (session["data"].get('action') == "conversation" and  message == "conversation"):
+
+                        elif message == "conversation" or session["data"].get('action') in ["conversation", "send_message"] or (session["data"].get('action') == "conversation" and message == "conversation"):
                             user = User.objects.get(phone_number=phone_number)
                             print("CONVERSATION : ", message, session['data'])
                             if session["data"].get("action") is None:
                                 session["data"]["action"] = "conversation"
-                                cache.set(user.phone_number, session, timeout=60*60*24)
-                                conversation = Conversation.objects.filter(course__students=user, course__code=session["data"]["selected_course"]).first()
+                                cache.set(user.phone_number,
+                                          session, timeout=60*60*24)
+                                conversation = Conversation.objects.filter(
+                                    course__students=user, course__code=session["data"]["selected_course"]).first()
                                 if conversation:
-                                    chat = lambda conversation: [f"*From :* {item.sender.first_name} {item.sender.last_name}\n*Date :* {item.date_sent.strftime('%d-%m-%Y %H:%M:%S')}\n*Message :* {item.content}" for item in conversation.messages.all()]
+                                    def chat(conversation): return [
+                                        f"*From :* {item.sender.first_name} {item.sender.last_name}\n*Date :* {item.date_sent.strftime('%d-%m-%Y %H:%M:%S')}\n*Message :* {item.content}" for item in conversation.messages.all()]
                                     session["data"]["action"] = "conversation"
-                                    cache.set(user.phone_number, session, timeout=60*60*24)
+                                    cache.set(user.phone_number,
+                                              session, timeout=60*60*24)
                                     conversation.has_unread = False
                                     conversation.save()
                                     return {
@@ -1618,9 +1638,11 @@ class ActionValidator(object):
                                         }
                                     }
                                 else:
-                                    course = Course.objects.get(code=session["data"]["selected_course"])
+                                    course = Course.objects.get(
+                                        code=session["data"]["selected_course"])
                                     session["data"]["action"] = "send_message"
-                                    cache.set(user.phone_number, session, timeout=60 * 60 * 24)
+                                    cache.set(user.phone_number,
+                                              session, timeout=60 * 60 * 24)
                                     return {
                                         "is_valid": False,
                                         "data": user,
@@ -1632,7 +1654,8 @@ class ActionValidator(object):
                             elif session["data"].get("action") == "conversation":
                                 if message == "send_message":
                                     session["data"]["action"] = "send_message"
-                                    cache.set(user.phone_number, session, timeout=60 * 60 * 24)
+                                    cache.set(user.phone_number,
+                                              session, timeout=60 * 60 * 24)
                                     return {
                                         "is_valid": False,
                                         "data": user,
@@ -1642,12 +1665,16 @@ class ActionValidator(object):
                                         }
                                     }
                             elif session["data"].get("action") == "send_message":
-                                conversation = Conversation.objects.filter(course__students=user, course__code=session["data"]["selected_course"]).first()
+                                conversation = Conversation.objects.filter(
+                                    course__students=user, course__code=session["data"]["selected_course"]).first()
                                 if conversation:
                                     conversation.post_message(user, message)
-                                    chat = lambda conversation: [f"*From :* {item.sender.first_name} {item.sender.last_name}\n*Date :* {item.date_sent.strftime('%d-%m-%Y %H:%M:%S')}\n*Message :* {item.content}" for item in conversation.messages.all()]
+
+                                    def chat(conversation): return [
+                                        f"*From :* {item.sender.first_name} {item.sender.last_name}\n*Date :* {item.date_sent.strftime('%d-%m-%Y %H:%M:%S')}\n*Message :* {item.content}" for item in conversation.messages.all()]
                                     session["data"]["action"] = "conversation"
-                                    cache.set(user.phone_number, session, timeout=60*60*24)
+                                    cache.set(user.phone_number,
+                                              session, timeout=60*60*24)
                                     conversation.has_unread = False
                                     conversation.save()
                                     return {
@@ -1659,12 +1686,17 @@ class ActionValidator(object):
                                         }
                                     }
                                 else:
-                                    course = Course.objects.get(code=session["data"]["selected_course"])
-                                    conversation = Conversation.objects.create(user=user, course=course)
+                                    course = Course.objects.get(
+                                        code=session["data"]["selected_course"])
+                                    conversation = Conversation.objects.create(
+                                        user=user, course=course)
                                     conversation.post_message(user, message)
-                                    chat = lambda conversation: [f"*From :* {item.sender.first_name} {item.sender.last_name}\n*Date :* {item.date_sent.strftime('%d-%m-%Y %H:%M:%S')}\n*Message :* {item.content}" for item in conversation.messages.all()]
+
+                                    def chat(conversation): return [
+                                        f"*From :* {item.sender.first_name} {item.sender.last_name}\n*Date :* {item.date_sent.strftime('%d-%m-%Y %H:%M:%S')}\n*Message :* {item.content}" for item in conversation.messages.all()]
                                     session["data"]["action"] = "conversation"
-                                    cache.set(user.phone_number, session, timeout=60*60*24)
+                                    cache.set(user.phone_number,
+                                              session, timeout=60*60*24)
                                     conversation.has_unread = False
                                     conversation.save()
                                     return {
@@ -1676,16 +1708,19 @@ class ActionValidator(object):
                                         }
                                     }
 
-                        
-                        elif message == "course_material" or session["data"].get('action') in ["course_material"] or (session["data"].get('action') == "course_material" and  message == "course_material"):
+                        elif message == "course_material" or session["data"].get('action') in ["course_material"] or (session["data"].get('action') == "course_material" and message == "course_material"):
                             user = User.objects.get(phone_number=phone_number)
                             if session["data"].get("action") is None:
                                 session["data"]["action"] = "course_material"
-                                cache.set(user.phone_number, session, timeout=60*60*24)
-                                course_materials = CourseMaterial.objects.filter(course__students=user, course__code=session["data"]["selected_course"])
+                                cache.set(user.phone_number,
+                                          session, timeout=60*60*24)
+                                course_materials = CourseMaterial.objects.filter(
+                                    course__students=user, course__code=session["data"]["selected_course"])
                                 if course_materials:
-                                    paginated_response = self.paginated_menu(user, message, course_materials, session, 'course_materials', prefix='course_material')
-                                    generate_menu = lambda course_materials_list: [f"*{count}.* {item.title}" for count, item in enumerate(course_materials_list[:8], 1)]
+                                    paginated_response = self.paginated_menu(
+                                        user, message, course_materials, session, 'course_materials', prefix='course_material')
+                                    def generate_menu(course_materials_list): return [
+                                        f"*{count}.* {item.title}" for count, item in enumerate(course_materials_list[:8], 1)]
                                     return {
                                         "is_valid": False,
                                         "data": user,
@@ -1702,7 +1737,7 @@ class ActionValidator(object):
                                         "data": user,
                                         "message": {
                                             "exclude_back": True,
-                                            "menu":" ourse_menu", 
+                                            "menu": " ourse_menu",
                                             "response_type": "button",
                                             "text": "*Empty*\n\nNo course material available for this course at the moment.Please try again later.",
                                         }
@@ -1711,7 +1746,8 @@ class ActionValidator(object):
                                 # if message starts with course_material_ then it is a course material
                                 if message.startswith("course_material_"):
                                     course_material_id = message.split("_")[2]
-                                    course_material = CourseMaterial.objects.get(id=course_material_id, )
+                                    course_material = CourseMaterial.objects.get(
+                                        id=course_material_id, )
                                     return {
                                         "is_valid": False,
                                         "data": user,
@@ -1734,8 +1770,8 @@ class ActionValidator(object):
                                             "response_type": "button",
                                             "text": "*Invalid selection*\n\nPlease select a valid option from the menu.",
                                         }
-                                    }   
-                                
+                                    }
+
                         return {
                             "is_valid": False,
                             "data": [],
@@ -1923,7 +1959,8 @@ class ActionValidator(object):
                 "unknown": "❓"
 
             }
-            generate_menu = lambda payment: [f"*{count}.* {payment.course.name} {statuses.get(payment.payment_status.strip().lower()) if statuses.get(payment.payment_status.strip().lower()) else statuses.get('unknown')}" for count, payment in enumerate(payments[:8], 1)]
+            def generate_menu(payment): return [
+                f"*{count}.* {payment.course.name} {statuses.get(payment.payment_status.strip().lower()) if statuses.get(payment.payment_status.strip().lower()) else statuses.get('unknown')}" for count, payment in enumerate(payments[:8], 1)]
             return {
                 "is_valid": True,
                 "data": user.first(),
@@ -2070,7 +2107,9 @@ class ActionValidator(object):
         elif message == "my_assignments":
             cache.set(f"{phone_number}_session", session, 60*60*24)
             # filter pending work if user is enrolled in the course and user not in the list of submitted assignments
-            generate_menu = lambda pending_work: [f"*{count}.* {pending_work.title}" for count, pending_work in enumerate(pending_work[:8], 1)]
+
+            def generate_menu(pending_work): return [
+                f"*{count}.* {pending_work.title}" for count, pending_work in enumerate(pending_work[:8], 1)]
             if pending_work:
                 return {
                     "is_valid": False,
@@ -2121,7 +2160,7 @@ class ActionValidator(object):
         elif session["data"].get("action") == "get_help" and message == "outsource":
             session["data"]["action"] = "assignment_type"
             cache.set(f"{phone_number}_session", session, timeout=60*60*24)
-        
+
             return {
                 "is_valid": False,
                 "data": user,
@@ -2138,7 +2177,8 @@ class ActionValidator(object):
                             "description": "Language"},
                         {"id": "social", "name": "📖 Social Studies",
                             "description": "Social"},
-                        {"id": "ict", "name": "💻 ICT Assignment", "description": "ICT"},
+                        {"id": "ict", "name": "💻 ICT Assignment",
+                         "description": "ICT"},
                         {"id": "other", "name": "📚 Other", "description": "Other"},
                     ]
 
@@ -2166,10 +2206,10 @@ class ActionValidator(object):
                 "data": user,
                 "message": {
                     "response_type": "text",
-                    "text":"*📜 Assignment Description*\n\nPlease enter a description or instructions for the assignment." 
+                    "text": "*📜 Assignment Description*\n\nPlease enter a description or instructions for the assignment."
                 }
             }
-        
+
         elif session["data"].get("action") == "assignment_description":
             session["data"]["action"] = 'receive_assignment'
             session["data"]["assignment_description"] = message
@@ -2263,7 +2303,9 @@ class ActionValidator(object):
                 key = "outsourced"
                 menu_items = self.paginated_menu(
                     user, message, section_objects, session, key, prefix="outsourced")
-                generate_menu = lambda pending_work: [f"{count}. {pending_work.title}" for count, pending_work in enumerate(pending_work[:8], 1)]
+
+                def generate_menu(pending_work): return [
+                    f"{count}. {pending_work.title}" for count, pending_work in enumerate(pending_work[:8], 1)]
                 return {
                     "is_valid": False,
                     "data": user,
@@ -2359,7 +2401,8 @@ class ActionValidator(object):
                           message.split("_")[1], timeout=60*60*24)
                 cache.set(f"{phone_number}", session, timeout=60*60*24)
                 print("Saving session : ", session['data'])
-                generate_menu = lambda packages: [f"{count}. {package.name.title()} Package(${package.price})" for count, package in enumerate(packages, 1)]
+                def generate_menu(packages): return [
+                    f"{count}. {package.name.title()} Package(${package.price})" for count, package in enumerate(packages, 1)]
                 return {
                     "is_valid": False,
                     "data": user,
@@ -2562,6 +2605,3 @@ class ActionValidator(object):
                 "text": f"Hi {user.first_name},\n\nYour payment has been cancelled.\n\n",
             }
         }
-
-
-
