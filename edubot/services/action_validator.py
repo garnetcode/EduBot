@@ -1,4 +1,4 @@
-"""Action validator for the Ngena."""
+ """Action validator for the Ngena."""
 # pylint: disable=line-too-long
 # pylint: disable=import-error
 # pylint: disable=no-name-in-module
@@ -34,7 +34,6 @@ HOST = config("HOST", default="http://localhost:8000")
 
 class ActionValidator(object):
     """Action validator for the Ngena."""
-
     def __init__(self):
         """Initialize the action validator."""
         self.registry = {
@@ -1556,6 +1555,7 @@ class ActionValidator(object):
                                         "is_valid": False,
                                         "data": user.first(),
                                         "message": {
+                                            "exclude_back": True,
                                             "response_type": "button",
                                             "text": "*Empty*\n\nNo quiz available for this course at the moment.Please try again later.",
                                         }
@@ -1621,8 +1621,6 @@ class ActionValidator(object):
                                     course = Course.objects.get(code=session["data"]["selected_course"])
                                     session["data"]["action"] = "send_message"
                                     cache.set(user.phone_number, session, timeout=60 * 60 * 24)
-                                    conversation.has_unread = False
-                                    conversation.save()
                                     return {
                                         "is_valid": False,
                                         "data": user,
@@ -1703,6 +1701,8 @@ class ActionValidator(object):
                                         "is_valid": False,
                                         "data": user,
                                         "message": {
+                                            "exclude_back": True,
+                                            "menu":" ourse_menu", 
                                             "response_type": "button",
                                             "text": "*Empty*\n\nNo course material available for this course at the moment.Please try again later.",
                                         }
@@ -2290,7 +2290,7 @@ class ActionValidator(object):
             cache.set(f"{phone_number}_session", session, timeout=60*60*24)
 
             assignment = Assignment.objects.get(id=message.split("_")[1])
-            if assignment.status == "Pending" and assignment.payment.payment_status != "Paid":
+            if assignment.status == "Pending" and assignment.payment:
                 return {
                     "is_valid": False,
                     "data": user,
@@ -2407,7 +2407,7 @@ class ActionValidator(object):
                             "description": "Complete purchase with PayPal",
                         },
                         {
-                            "id": "handle_payment",
+                            "id": "menu",
                             "name": "🇿🇼 PayNow (disabled)",
                             "description": "Complete purchase with PayNow",
                         },

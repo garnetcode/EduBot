@@ -92,9 +92,9 @@ class User(AbstractUser):
     
     def has_active_permission_for_course(self, course):
         """Check if user has permission for course"""
-        print("CHECKING SUBSCRIPTION FOR : ", self, course, Subscription.objects.filter(user=self, course__code=course).exists(), Subscription.objects.filter(user=self, course__code=course, expires_at__gte=datetime.now()).exists())
-        if Subscription.objects.filter(user=self, course__code=course, expires_at__gte=datetime.now()).exists():
-            subscription = Subscription.objects.filter(user=self, course__code=course, expires_at__gte=datetime.now()).first()
+        print("CHECKING SUBSCRIPTION FOR : ", self, course, Subscription.objects.filter(user=self, course__code=course).exists(), Subscription.objects.filter(user=self, course__code=course, expiry_date__gte=datetime.now()).exists())
+        if Subscription.objects.filter(user=self, course__code=course, expiry_date__gte=datetime.now()).exists():
+            subscription = Subscription.objects.filter(user=self, course__code=course, expiry_date__gte=datetime.now()).first()
             print("ACCESS PERMISSION : ", subscription.package.access_permissions)
             if subscription.package.access_permissions in ['2', '3', '4']:
                 return True

@@ -287,3 +287,4 @@ PAYPAL_RETURN_URL_ASSIGNMENT = config('PAYPAL_RETURN_URL_ASSIGNMENT')
 #     "name": "Gold ($30)",
 #     "description": "Silver package + Zoom calls for the duration of the course.",
 # },
+

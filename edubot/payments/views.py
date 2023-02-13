@@ -231,7 +231,7 @@ class PayPalWebhookView(APIView):
                                 user=payment.user,
                                 course=payment.course,
                                 package=payment.package,
-                                expires_at=delta,
+                                expiry_date=delta,
                             )
                             receipt_like_template = f"""
 

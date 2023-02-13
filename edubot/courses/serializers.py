@@ -53,5 +53,6 @@ class MessageSerializer(ModelSerializer):
         """Override the to_representation method."""
         representation = super().to_representation(instance)
         representation['sender'] = instance.sender.first_name
+        representation['sender_id'] = instance.sender.id
         return representation
 

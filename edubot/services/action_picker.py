@@ -465,6 +465,7 @@ class ActionPickerService(object):
             cache.delete(f"{self.payload.get('phone_number')}_quiz_session")
             cache.delete(f"{self.payload.get('phone_number')}_history")
             cache.delete(f"bookmark_{self.payload.get('phone_number')}")
+            cache.delete(f"{self.payload.get('phone_number')}_session")
             state = "greet"
 
         print("Current STATE : ", state)
