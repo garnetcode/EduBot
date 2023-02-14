@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='subscription',
-            name='expires_at',
+            name='expiry_date',
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(

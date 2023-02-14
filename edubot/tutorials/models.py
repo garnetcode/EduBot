@@ -69,6 +69,10 @@ class CallRequest(models.Model):
         default='pending'
     )
     call_link = models.URLField(max_length=200, null=True, blank=True)
+    call_type = models.CharField(
+        max_length=200,
+        default='WhatsApp'
+    )
 
     def __str__(self):
         """Unicode representation of CallRequest."""

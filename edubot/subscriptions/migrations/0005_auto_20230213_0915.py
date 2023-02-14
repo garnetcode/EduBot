@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RenameField(
             model_name='subscription',
-            old_name='expires_at',
+            old_name='expiry_date',
             new_name='expiry_date',
         ),
         migrations.AlterField(

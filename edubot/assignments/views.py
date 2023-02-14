@@ -24,7 +24,7 @@ class AssignmentViewset(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if self.request.user.role == "ADMIN":
             return queryset
-        return queryset.filter(course__instructors__in=self.request.user)
+        return queryset.filter(course__instructors=self.request.user)
 
     def perform_create(self, serializer):
         """Override the create method."""

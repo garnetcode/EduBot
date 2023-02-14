@@ -515,6 +515,7 @@ class ActionValidator(object):
 
             "message": {
                 "exclude_back": True,
+                "menu": "course_menu",
                 "response_type": "button",
                 "text": "*No Courses Available!!*\n\nNo courses available at the moment.\nPlease contact tutor to upload courses.",
             }
@@ -671,7 +672,7 @@ class ActionValidator(object):
                     "data": user.first(),
                     "message": {
                         "response_type": "button",
-                        "text": "Oops! You are not enrolled in any course at the moment.  Please try again later.",
+                        "text": "*Oops!*\n\n You are not enrolled in any course at the moment.  Please try again later.",
                     }
                 }
             else:
@@ -687,7 +688,7 @@ class ActionValidator(object):
                         "data": user.first(),
                         "message": {
                             "response_type": "interactive",
-                            "text": f"*Course Menu ({user.first().course_package(session['data']['selected_course']).name.title() if user.first().course_package(session['data']['selected_course']) else 'No Package Detected'})*\n\n 📜 Outline\n\n 📹 Tutorials\n\n 📚 Material\n\n 📊 Assessment\n\n 👨‍🏫📞 Schedule Call\n\n 🔙 Back\n\nSelect an option to continue.",
+                            "text": f"*Course Menu ({user.first().course_package(session['data']['selected_course']).name.title() if user.first().course_package(session['data']['selected_course']) else 'No Package Detected'})*\n\n 📜 Outline\n\n 📹 Tutorials\n\n 📚 Material\n\n 📊 Assessment\n\n 👨‍🏫📞 Schedule Call\n\n 🗣 Conversation\n\n 🔙 Back\n\nSelect an option to continue.",
                             "username": f"{user.first().first_name} {user.first().last_name}",
                             "menu_name": f"📚 {course.name}",
                             "menu_items": [
@@ -744,7 +745,7 @@ class ActionValidator(object):
                         "data": user.first(),
                         "message": {
                             "response_type": "interactive",
-                            "text": f"*Course Menu({user.first().course_package(session['data']['selected_course']).name.title() if user.first().course_package(session['data']['selected_course']) else 'No Package Detected'})*\n\n 📜 Outline\n\n 📹 Tutorials\n\n 📚 Material\n\n 📊 Assessment\n\n 👨‍🏫📞 Schedule Call\n\n 🔙 Back\n\nSelect an option to continue.",
+                            "text": f"*Course Menu({user.first().course_package(session['data']['selected_course']).name.title() if user.first().course_package(session['data']['selected_course']) else 'No Package Detected'})*\n\n 📜 Outline\n\n 📹 Tutorials\n\n 📚 Material\n\n 📊 Assessment\n\n 👨‍🏫📞 Schedule Call\n\n 🗣 Conversation\n\n 🔙 Back\n\nSelect an option to continue.",
                             "username": f"{user.first().first_name} {user.first().last_name}",
                             "menu_name": f"📚 {course.name}",
                             "menu_items": [
@@ -788,7 +789,7 @@ class ActionValidator(object):
                         }
                     }
                 else:
-                    if session["data"].get("selected_course") and message in ["course_outline", "back"]:
+                    if session["data"].get("selected_course") and message in ["course_outline", "back", "Outline"]:
                         session["back"] = -3
                         session["data"] = {
                             'selected_course': session['data']['selected_course'],
@@ -811,7 +812,7 @@ class ActionValidator(object):
                     else:
                         print("Message", message, session["data"].get(
                             "selected_course"), session['data'].get("action"), session["data"].get("stage"))
-                        if message == "back_to_courses":
+                        if message.lower() in ["back_to_courses", "courses"]:
                             session = {
                                 "action": "my_courses",
                                 "data": {
@@ -865,7 +866,7 @@ class ActionValidator(object):
                                 }
                             }
 
-                        elif message == "request_call" or session['data'].get("action") == "request_call" or session['data'].get("stage") in ["date_of_call", "agenda"]:
+                        elif message.lower() in  ["request_call", "schedule call", "schedule", "call"] or session['data'].get("action") == "request_call" or session['data'].get("stage") in ["date_of_call", "agenda", "call_type"]:
                             session['data']["action"] = "request_call"
 
                             if not user.first().has_active_permission_for_course(session["data"].get("selected_course")):
@@ -896,6 +897,8 @@ class ActionValidator(object):
                                         "text": "Request Call \n\nYou already have another pending call scheduled for today.",
                                     }
                                 }
+                            
+
 
                             payload = session['data'].get('payload')
                             # date fommat 2020-12-12 12:00 or 2020-12-12
@@ -905,12 +908,13 @@ class ActionValidator(object):
                             print("\n\n\n\n#####################Request call",
                                   session['data'].get("action"), payload, message)
                             print("Regex", re.match(regex_date_time, message))
+
                             if session['data'].get("stage") == "date_of_call" and (re.match(regex_date_time, message) or re.match(regex_date, message) or re.match(regex_time, message)):
                                 if re.match(regex_time, message):
                                     message = f"{datetime.datetime.today().strftime('%Y-%m-%d')} {message}"
                                 payload["date_of_call"] = message
                                 session['data']["payload"] = payload
-                                session['data']["stage"] = "agenda"
+                                session['data']["stage"] = "call_type"
                                 cache.set(phone_number, session, 60*60*24)
                                 return {
                                     "is_valid": False,
@@ -920,8 +924,38 @@ class ActionValidator(object):
                                         "text": "Request Call\n\nWhat topic or concept would you like to discuss?",
                                     }
                                 }
-                            if session['data'].get("stage") == "agenda":
+                            
+                            if session['data'].get("stage") == "call_type":
                                 payload["agenda"] = message
+                                session['data']["payload"] = payload
+                                session['data']["stage"] = "agenda"
+                                cache.set(phone_number, session, 60*60*24)
+                                return {
+                                    "is_valid": False,
+                                    "data": user.first(),
+                                    "message": {
+                                        "response_type": "interactive",
+                                        "text": "Call Type\n\nWhat is type of call?",
+                                        "menu_name": "📅 Agenda",
+                                        "menu_items": [
+                                            {
+                                                "id": item,
+                                                "name": item,
+                                                "description": item,
+                                            } for item in user.first().call_permissions(session["data"].get("selected_course")) if item != "Curated Content"
+                                        ] if user.first().call_permissions(session["data"].get("selected_course")) else [
+                                            {
+                                                "id": "course_menu",
+                                                "name": "Menu",
+                                                "description": "No call permissions",
+                                            }
+                                        ]
+                                    }
+                                }
+                            
+                            
+                            if session['data'].get("stage") == "agenda":
+                                payload["call_type"] = message
                                 session['data']["payload"] = payload
                                 cache.set(phone_number, session, 60*60*24)
 
@@ -982,7 +1016,7 @@ class ActionValidator(object):
                                     }
                                 }
 
-                        elif message == "tutorials" or session['data'].get("action") == "tutorials":
+                        elif message.lower() == "tutorials" or session['data'].get("action") == "tutorials":
                             print("Tutorials", session['data'].get(
                                 "action"), message, session['data'].get("tutorial_stage"))
                             if session['data'].get("tutorial_stage") is None:
@@ -1369,6 +1403,7 @@ class ActionValidator(object):
                                             "is_last_step": is_last_step,
                                             "message": {
                                                 "exclude_back": True,
+                                                "menu": "course_menu",
                                                 "response_type": "button",
                                                 "text": "*Invalid selection*\n\nPlease select a valid option from the menu.",
                                             }
@@ -1494,7 +1529,7 @@ class ActionValidator(object):
                                                     }
                                                 }
 
-                        elif message == "course_assessment" or session["data"].get("action") == "select_quiz" or session["data"].get("stage") == "course_assessment":
+                        elif message.lower() in ["course_assessment", "assessment", "course assessment"] or session["data"].get("action") == "select_quiz" or session["data"].get("stage") == "course_assessment":
                             print("IN HEREEEEEEssss", session)
                             all_quizzes = Quiz.objects.filter(
                                 course__code=session["data"]["selected_course"], is_published=True)
@@ -1612,7 +1647,7 @@ class ActionValidator(object):
                                 }
                             }
 
-                        elif message == "conversation" or session["data"].get('action') in ["conversation", "send_message"] or (session["data"].get('action') == "conversation" and message == "conversation"):
+                        elif message.lower() in ["conversation", "chat"] or session["data"].get('action') in ["conversation", "send_message"] or (session["data"].get('action') == "conversation" and message == "conversation"):
                             user = User.objects.get(phone_number=phone_number)
                             print("CONVERSATION : ", message, session['data'])
                             if session["data"].get("action") is None:
@@ -1708,7 +1743,7 @@ class ActionValidator(object):
                                         }
                                     }
 
-                        elif message == "course_material" or session["data"].get('action') in ["course_material"] or (session["data"].get('action') == "course_material" and message == "course_material"):
+                        elif message.lower() in ["course_material", "materials", "course materials"]  or session["data"].get('action') in ["course_material"] or (session["data"].get('action') == "course_material" and message == "course_material"):
                             user = User.objects.get(phone_number=phone_number)
                             if session["data"].get("action") is None:
                                 session["data"]["action"] = "course_material"
@@ -1737,7 +1772,7 @@ class ActionValidator(object):
                                         "data": user,
                                         "message": {
                                             "exclude_back": True,
-                                            "menu": " ourse_menu",
+                                            "menu": "course_menu",
                                             "response_type": "button",
                                             "text": "*Empty*\n\nNo course material available for this course at the moment.Please try again later.",
                                         }
@@ -1772,15 +1807,54 @@ class ActionValidator(object):
                                         }
                                     }
 
-                        return {
-                            "is_valid": False,
-                            "data": [],
-                            "message": {
-                                "exclude_back": True,
-                                "response_type": "button",
-                                "text": "Course Menu\n\nCourse Operations (Tutorials & Quizz) Implementation is in progress.\n\nComing soon, please try again later.",
-                            }
+                    return {
+                        "is_valid": False,
+                        "data": user.first(),
+                        "message": {
+                            "response_type": "interactive",
+                            "text": f"*Course Menu({user.first().course_package(session['data']['selected_course']).name.title() if user.first().course_package(session['data']['selected_course']) else 'No Package Detected'})*\n\n 📜 Outline\n\n 📹 Tutorials\n\n 📚 Material\n\n 📊 Assessment\n\n 👨‍🏫📞 Schedule Call\n\n 🗣 Conversation\n\n 🔙 Back\n\nSelect an option to continue.",
+                            "username": f"{user.first().first_name} {user.first().last_name}",
+                            "menu_name": f"📚 {course.name}",
+                            "menu_items": [
+                                {
+                                    "id": "course_outline",
+                                    "name": "📜 Outline",
+                                    "description": "Course Outline"
+                                },
+                                {
+                                    "id": "tutorials",
+                                    "name": "📹 Tutorials",
+                                    "description": "Course Tutorial"
+                                },
+                                {
+                                    "id": "course_material",
+                                    "name": "📚 Material",
+                                    "description": "Course Material"
+                                },
+                                {
+                                    "id": "course_assessment",
+                                    "name": "📊 Assessment",
+                                    "description": "Course Assessment"
+                                },
+                                {
+                                    "id": "request_call",
+                                    "name": "👨‍🏫📞 Schedule Call",
+                                    "description": "Request a call from a tutor"
+                                },
+                                {
+                                    "id": "conversation",
+                                    "name": "🗣 Conversation",
+                                    "description": "Conversation"
+
+                                },
+                                {
+                                    "id": "back_to_courses",
+                                    "name": "🔙 Back",
+                                    "description": "Back to courses"
+                                }
+                            ]
                         }
+                    }
 
     def profile(self, phone_number, message, session, payload=dict):
         """Profile menu"""
@@ -2033,7 +2107,7 @@ class ActionValidator(object):
                 "data": user,
                 "message": {
                     "response_type": "text",
-                    "text": "*📎 Upload Document* \n\nPlease upload and send your assignment as a document here.*"
+                    "text": "*📎 Upload Document* \n\nPlease upload and send your assignment as a document here."
                 }
             }
 
@@ -2100,7 +2174,7 @@ class ActionValidator(object):
                     "data": user,
                     "message": {
                         "response_type": "text",
-                        "text": "*📎 Upload Document* \n\nPlease upload and send your assignment as a document here.*"
+                        "text": "*📎 Upload Document* \n\nPlease upload and send your assignment as a document here."
                     }
                 }
 
@@ -2312,7 +2386,7 @@ class ActionValidator(object):
 
                     "message": {
                         "response_type": "paginated_interactive",
-                        "text": "*Pending Assignments*"+"\n\n".join(generate_menu(pending_work)),
+                        "text": "*Pending Assignments* \n\n"+"\n\n".join(generate_menu(pending_work)),
                         "username": f"{user.first_name} {user.last_name}",
                         "menu_name": "📝 Pending",
                         "menu_items": menu_items
@@ -2450,11 +2524,24 @@ class ActionValidator(object):
                             "description": "Complete purchase with PayPal",
                         },
                         {
-                            "id": "menu",
+                            "id": "disabled",
                             "name": "🇿🇼 PayNow (disabled)",
                             "description": "Complete purchase with PayNow",
                         },
                     ]
+                }
+            }
+        if message == "disabled":
+            print("PAYNOW")
+            session["data"]["action"] = "pending_payment"
+            cache.set(phone_number, session, 60*60*24)
+            return {
+                "is_valid": False,
+                "data": user,
+                "message": {
+                    "response_type": "button",
+                    "exclude_back": True,
+                    "text": "*🇿🇼 PayNow*\n\nThis feature is currently disabled. Please select another payment option.",
                 }
             }
 
@@ -2576,7 +2663,7 @@ class ActionValidator(object):
             "message": {
                 "exclude_back": True,
                 "response_type": "button",
-                "text": "Payment Failed",
+                "text": "*Payment Failed*\n\nPlease try again later",
             }
         }
 
@@ -2589,7 +2676,7 @@ class ActionValidator(object):
             "message": {
                 "exclude_back": True,
                 "response_type": "text",
-                "text": f"*🙏 Thank you {user.first_name}*\n\nPlease wait while we process your payment, you will be notified once we receive confirmation for your payment.\n\nThank you",
+                "text": f"*🙏 Thank you {user.first_name}*\n\nPlease wait while we process your payment, you will be notified once we receive confirmation for your payment. _Confirmation usually takes about 30 seconds_\n\nThank you",
             }
         }
 

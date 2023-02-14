@@ -106,6 +106,23 @@ class User(AbstractUser):
             subscription = Subscription.objects.filter(user=self, course__code=course).first()
             return subscription.package
         return None
+    
+    def call_permissions(self, course):
+        """Get call permissions"""
+        # ('1', 'Curated Content'),
+        # ('2', 'Curated Content + Whatsapp Calls'),
+        # ('3', 'Curated Content + Whatsapp Calls + Zoom Calls'),
+        # ('4', 'Curated Content + Whatsapp Calls + Zoom Calls + Live Classes')
+        permissions = {
+            1: ['Curated Content'],
+            2: ['Curated Content', 'Whatsapp Calls'],
+            3: ['Curated Content', 'Whatsapp Calls', 'Zoom Calls'],
+            4: ['Curated Content', 'Whatsapp Calls', 'Zoom Calls', 'Live Classes']
+        }
+        if Subscription.objects.filter(user=self, course__code=course).exists():
+            subscription = Subscription.objects.filter(user=self, course__code=course).first()
+            return permissions[int(subscription.package.access_permissions)-1]
+        return []
 
 
     @classmethod

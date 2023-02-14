@@ -33,7 +33,9 @@ class ConversationSerializer(ModelSerializer):
     def to_representation(self, instance):
         """Override the to_representation method."""
         representation = super().to_representation(instance)
+        representation['user_name'] = instance.user.first_name + " " + instance.user.last_name
         representation['messages'] = MessageSerializer(instance=instance.messages.all(), many=True).data
+        representation['course_name'] = instance.course.name
         return representation
     
 

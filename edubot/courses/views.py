@@ -99,12 +99,24 @@ class ConversationViewset(viewsets.ModelViewSet):
             queryset = queryset.filter(course__instructors=self.request.user)
         return queryset
 
+    @action(detail=False, methods=['get'], url_path='fetch/(?P<course_id>[0-9a-f-]+)')
+    def get_by_course(self, request, course_id):
+        """Get all call requests for a course."""
+        #pylint: disable=no-member
+        print("here", course_id)
+        serializer = self.serializer_class(self.queryset.filter(course__id=course_id), many=True)
+        response = {
+            "conversations": serializer.data
+        }
+        return JsonResponse(response, status=200)
+
     # post message, takes in a conversation id and a message
     @action(detail=False, methods=['post'], url_path='post_message')
     def post_message(self, request):
         """Post a message"""
         #pylint: disable=no-member
         conversation = Conversation.objects.get(id=request.data['conversation_id'])
+
         if conversation:
             if self.request.user.role == "TUTOR":
                 if self.request.user not in conversation.course.instructors.all():
